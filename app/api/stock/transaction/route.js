@@ -4,51 +4,15 @@ import { ObjectId } from 'mongodb';
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { stockId, type, quantity, transactionType } = body;
-
-    if (!stockId || !type || !quantity || !transactionType) {
-      return new Response(
-        JSON.stringify({ message: 'Missing required fields' }), 
-        { status: 400 }
-      );
-    }
+    const { stockId, quantity, transactionType, returnType, marketplaceId, date } = body;
 
     const client = await clientPromise;
     const db = client.db('flikertag');
 
-    // Get current stock with category and marketplace info
-    const stock = await db.collection('stock').aggregate([
-      { 
-        $match: { _id: new ObjectId(stockId) }
-      },
-      {
-        $lookup: {
-          from: 'category',
-          localField: 'categoryId',
-          foreignField: '_id',
-          as: 'category'
-        }
-      },
-      {
-        $lookup: {
-          from: 'marketplace',
-          localField: 'marketplaceId',
-          foreignField: '_id',
-          as: 'marketplace'
-        }
-      },
-      {
-        $project: {
-          modelName: 1,
-          initialQuantity: 1,
-          availableQuantity: 1,
-          categoryId: 1,
-          marketplaceId: 1,
-          category: { $arrayElemAt: ['$category.name', 0] },
-          marketplace: { $arrayElemAt: ['$marketplace.name', 0] }
-        }
-      }
-    ]).next();
+    // Get stock details
+    const stock = await db.collection('stock').findOne(
+      { _id: new ObjectId(stockId) }
+    );
 
     if (!stock) {
       return new Response(
@@ -57,50 +21,55 @@ export async function POST(req) {
       );
     }
 
-    let newQuantity;
-    if (type === 'sell') {
-      if (stock.availableQuantity < quantity) {
-        return new Response(
-          JSON.stringify({ message: 'Insufficient stock' }), 
-          { status: 400 }
-        );
-      }
-      newQuantity = stock.availableQuantity - quantity;
-    } else if (type === 'return') {
-      newQuantity = stock.availableQuantity + quantity;
-    } else {
+    // Calculate new quantity
+    const newQuantity = transactionType === 'sell' 
+      ? stock.availableQuantity - quantity
+      : stock.availableQuantity + quantity;
+
+    if (newQuantity < 0) {
       return new Response(
-        JSON.stringify({ message: 'Invalid transaction type' }), 
+        JSON.stringify({ message: 'Insufficient stock' }), 
         { status: 400 }
       );
     }
 
-    // Update stock
-    await db.collection('stock').updateOne(
-      { _id: new ObjectId(stockId) },
-      { 
-        $set: { 
-          availableQuantity: newQuantity,
-          updatedAt: new Date()
-        } 
-      }
+    // Get marketplace details
+    const marketplace = await db.collection('marketplace').findOne(
+      { _id: new ObjectId(marketplaceId) }
     );
 
-    // Create report entry
-    await db.collection('reports').insertOne({
+    if (!marketplace) {
+      return new Response(
+        JSON.stringify({ message: 'Marketplace not found' }), 
+        { status: 404 }
+      );
+    }
+
+    // Get category details
+    const category = await db.collection('category').findOne(
+      { _id: stock.categoryId }
+    );
+
+    // Create transaction record
+    await db.collection('transactions').insertOne({
       stockId: new ObjectId(stockId),
-      modelName: stock.modelName,
+      marketplaceId: new ObjectId(marketplaceId),
       categoryId: stock.categoryId,
-      categoryName: stock.category,
-      marketplaceId: stock.marketplaceId,
-      marketplaceName: stock.marketplace,
-      initialQuantity: stock.initialQuantity,
-      availableQuantity: newQuantity,
-      transactionType: type,
-      returnType: type === 'return' ? transactionType : null,
-      quantity: quantity,
-      date: new Date()
+      modelName: stock.modelName,
+      categoryName: category.name,
+      marketplaceName: marketplace.name,
+      quantity: parseInt(quantity),
+      transactionType,
+      returnType,
+      date: new Date(date),
+      createdAt: new Date()
     });
+
+    // Update stock quantity
+    await db.collection('stock').updateOne(
+      { _id: new ObjectId(stockId) },
+      { $set: { availableQuantity: newQuantity } }
+    );
 
     return new Response(
       JSON.stringify({
@@ -145,20 +114,23 @@ export async function GET(request) {
       };
     }
 
-    const reports = await db.collection('reports')
+    const transactions = await db.collection('transactions')
       .find(query)
       .sort({ date: -1 })
       .toArray();
 
-    return new Response(JSON.stringify(reports), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify(transactions), 
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
 
   } catch (error) {
-    console.error('Error fetching reports:', error);
+    console.error('Error fetching transactions:', error);
     return new Response(
-      JSON.stringify({ message: 'Error fetching reports' }), 
+      JSON.stringify({ message: 'Error fetching transactions' }), 
       { status: 500 }
     );
   }

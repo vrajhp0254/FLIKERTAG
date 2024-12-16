@@ -87,7 +87,7 @@ export default function Reports() {
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">Category</label>
             <select
@@ -158,57 +158,59 @@ export default function Reports() {
       </div>
 
       {/* Reports Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-4 py-3 text-left">Date</th>
-              <th className="px-4 py-3 text-left">Model Name</th>
-              <th className="px-4 py-3 text-left">Category</th>
-              <th className="px-4 py-3 text-left">Marketplace</th>
-              <th className="px-4 py-3 text-right">Initial Stock</th>
-              <th className="px-4 py-3 text-right">Available Stock</th>
-              <th className="px-4 py-3 text-center">Transaction Type</th>
-              <th className="px-4 py-3 text-center">Return Type</th>
-              <th className="px-4 py-3 text-right">Quantity</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {reports.map((report) => (
-              <tr key={report._id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  {new Date(report.date).toLocaleDateString()}
-                </td>
-                <td className="px-4 py-3">{report.modelName}</td>
-                <td className="px-4 py-3">{report.categoryName}</td>
-                <td className="px-4 py-3">{report.marketplaceName}</td>
-                <td className="px-4 py-3 text-right">{report.initialQuantity}</td>
-                <td className="px-4 py-3 text-right">{report.availableQuantity}</td>
-                <td className="px-4 py-3 text-center">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    report.transactionType === 'sell' 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
-                  }`}>
-                    {report.transactionType}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-center">
-                  {report.returnType ? (
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      report.returnType === 'customer' 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : 'bg-purple-100 text-purple-800'
-                    }`}>
-                      {report.returnType}
-                    </span>
-                  ) : '-'}
-                </td>
-                <td className="px-4 py-3 text-right">{report.quantity}</td>
+      <div className="overflow-x-auto -mx-4 md:mx-0">
+        <div className="min-w-[800px] md:w-full">
+          <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-4 py-3 text-left">Date</th>
+                <th className="px-4 py-3 text-left">Model Name</th>
+                <th className="px-4 py-3 text-left">Category</th>
+                <th className="px-4 py-3 text-left">Marketplace</th>
+                <th className="px-4 py-3 text-right">Entry Stock</th>
+                <th className="px-4 py-3 text-right">Available Stock</th>
+                <th className="px-4 py-3 text-center">Transaction Type</th>
+                <th className="px-4 py-3 text-center">Return Type</th>
+                <th className="px-4 py-3 text-right">Quantity</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {reports.map((report) => (
+                <tr key={report._id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    {new Date(report.date).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3">{report.modelName}</td>
+                  <td className="px-4 py-3">{report.categoryName}</td>
+                  <td className="px-4 py-3">{report.marketplaceName}</td>
+                  <td className="px-4 py-3 text-right">{report.initialQuantity}</td>
+                  <td className="px-4 py-3 text-right">{report.availableQuantity}</td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      report.transactionType === 'sell' 
+                        ? 'bg-red-100 text-red-800' 
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {report.transactionType}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {report.returnType ? (
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        report.returnType === 'customer' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-purple-100 text-purple-800'
+                      }`}>
+                        {report.returnType}
+                      </span>
+                    ) : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-right">{report.quantity}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

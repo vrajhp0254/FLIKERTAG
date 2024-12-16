@@ -30,15 +30,7 @@ export async function GET(request) {
           from: 'category',
           localField: 'categoryId',
           foreignField: '_id',
-          as: 'category'
-        }
-      },
-      {
-        $lookup: {
-          from: 'marketplace',
-          localField: 'marketplaceId',
-          foreignField: '_id',
-          as: 'marketplace'
+          as: 'categoryData'
         }
       },
       {
@@ -47,8 +39,8 @@ export async function GET(request) {
           initialQuantity: 1,
           availableQuantity: 1,
           createdAt: 1,
-          category: { $arrayElemAt: ['$category.name', 0] },
-          marketplace: { $arrayElemAt: ['$marketplace.name', 0] }
+          categoryId: 1,
+          category: { $arrayElemAt: ['$categoryData.name', 0] }
         }
       }
     ]).toArray();
@@ -70,43 +62,39 @@ export async function GET(request) {
 export async function POST(req) {
   try {
     const body = await req.json();
-    
-    const requiredFields = ['modelName', 'quantity', 'categoryId', 'marketplaceId'];
-    for (const field of requiredFields) {
-      if (!body[field]) {
-        return new Response(
-          JSON.stringify({ message: `${field} is required` }), 
-          { status: 400 }
-        );
-      }
+    const { modelName, categoryId, quantity, date } = body;
+
+    // Validate required fields
+    if (!modelName || !categoryId || !quantity || !date) {
+      return new Response(
+        JSON.stringify({ message: 'Model name, category, quantity, and date are required' }), 
+        { status: 400 }
+      );
     }
 
     const client = await clientPromise;
     const db = client.db('flikertag');
 
-    const category = await db.collection('category').findOne({
-      _id: new ObjectId(body.categoryId)
-    });
-    const marketplace = await db.collection('marketplace').findOne({
-      _id: new ObjectId(body.marketplaceId)
+    // Verify category exists
+    const category = await db.collection('category').findOne({ 
+      _id: new ObjectId(categoryId) 
     });
 
-    if (!category || !marketplace) {
+    if (!category) {
       return new Response(
-        JSON.stringify({ message: 'Invalid category or marketplace' }), 
-        { status: 400 }
+        JSON.stringify({ message: 'Category not found' }), 
+        { status: 404 }
       );
     }
 
-    const quantity = parseInt(body.quantity);
+    // Create stock
     const result = await db.collection('stock').insertOne({
-      modelName: body.modelName.trim(),
-      initialQuantity: quantity,
-      availableQuantity: quantity,
-      categoryId: new ObjectId(body.categoryId),
-      marketplaceId: new ObjectId(body.marketplaceId),
-      createdAt: new Date(),
-      updatedAt: new Date()
+      modelName,
+      categoryId: new ObjectId(categoryId),
+      initialQuantity: parseInt(quantity),
+      availableQuantity: parseInt(quantity),
+      date: new Date(date),
+      createdAt: new Date()
     });
 
     return new Response(
@@ -114,9 +102,10 @@ export async function POST(req) {
         message: 'Stock added successfully',
         stock: {
           id: result.insertedId,
-          modelName: body.modelName,
-          initialQuantity: quantity,
-          availableQuantity: quantity
+          modelName,
+          initialQuantity: parseInt(quantity),
+          availableQuantity: parseInt(quantity),
+          date
         }
       }), 
       {

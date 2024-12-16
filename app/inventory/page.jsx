@@ -7,40 +7,36 @@ import StockCard from '../components/StockCard';
 export default function Inventory() {
   const [stocks, setStocks] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [marketplaces, setMarketplaces] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     categoryId: '',
-    marketplaceId: '',
     search: ''
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/category').then(res => res.json()),
-      fetch('/api/marketplace').then(res => res.json())
-    ])
-      .then(([categoriesData, marketplacesData]) => {
-        setCategories(categoriesData);
-        setMarketplaces(marketplacesData);
-        fetchStocks();
-      })
-      .catch(error => {
-        console.error('Error fetching data:', error);
-        setLoading(false);
-      });
+    fetchCategories();
+    fetchStocks();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/category');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   const fetchStocks = async () => {
     try {
-      const queryParams = new URLSearchParams();
-      if (filters.categoryId) queryParams.append('categoryId', filters.categoryId);
-      if (filters.marketplaceId) queryParams.append('marketplaceId', filters.marketplaceId);
-      if (filters.search) queryParams.append('search', filters.search);
-
-      const response = await fetch(`/api/stock?${queryParams}`);
-      const data = await response.json();
-      setStocks(data);
+      const response = await fetch('/api/stock');
+      if (response.ok) {
+        const data = await response.json();
+        setStocks(data);
+      }
     } catch (error) {
       console.error('Error fetching stocks:', error);
     } finally {
@@ -48,41 +44,39 @@ export default function Inventory() {
     }
   };
 
-  useEffect(() => {
-    fetchStocks();
-  }, [filters]);
-
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFilters(prev => ({ ...prev, [name]: value }));
   };
 
   const clearFilters = () => {
     setFilters({
       categoryId: '',
-      marketplaceId: '',
       search: ''
     });
   };
 
+  const filteredStocks = stocks.filter(stock => {
+    const matchesCategory = !filters.categoryId || 
+      stock.categoryId && stock.categoryId.toString() === filters.categoryId;
+    const matchesSearch = !filters.search || 
+      stock.modelName.toLowerCase().includes(filters.search.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const hasActiveFilters = filters.categoryId || filters.search;
+
   if (loading) {
-    return <div className="flex justify-center items-center h-64">
-      <div className="text-lg">Loading...</div>
-    </div>;
+    return <div>Loading...</div>;
   }
 
-  const hasActiveFilters = filters.categoryId || filters.marketplaceId || filters.search;
-
   return (
-    <div className="p-6">
+    <div>
       <h1 className="text-2xl font-bold mb-6">Inventory</h1>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">Category</label>
             <select
@@ -95,23 +89,6 @@ export default function Inventory() {
               {categories.map(category => (
                 <option key={category._id} value={category._id}>
                   {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Marketplace</label>
-            <select
-              name="marketplaceId"
-              value={filters.marketplaceId}
-              onChange={handleFilterChange}
-              className="w-full p-2 border rounded"
-            >
-              <option value="">All Marketplaces</option>
-              {marketplaces.map(marketplace => (
-                <option key={marketplace._id} value={marketplace._id}>
-                  {marketplace.name}
                 </option>
               ))}
             </select>
@@ -146,21 +123,21 @@ export default function Inventory() {
         )}
       </div>
 
-      {/* Stock Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {stocks.length > 0 ? (
-          stocks.map(stock => (
-            <StockCard 
-              key={stock._id} 
-              stock={stock} 
-              onUpdate={fetchStocks}
-            />
-          ))
-        ) : (
-          <div className="col-span-full text-center py-8 text-gray-500">
-            No stocks found matching the current filters.
-          </div>
-        )}
+      {/* Stock Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {filteredStocks.map(stock => (
+          <StockCard
+            key={stock._id}
+            stock={stock}
+            onUpdate={(stockId, newQuantity) => {
+              setStocks(stocks.map(s => 
+                s._id === stockId 
+                  ? { ...s, availableQuantity: newQuantity }
+                  : s
+              ));
+            }}
+          />
+        ))}
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -10,9 +9,9 @@ export default function InventorySetup() {
   const [activeSection, setActiveSection] = useState(null);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold">Inventory Setup Page</h1>
-      <div className="mt-6 flex space-x-4">
+    <div className="p-4 md:p-6">
+      <h1 className="text-xl md:text-2xl font-bold">Inventory Setup Page</h1>
+      <div className="mt-4 md:mt-6 flex flex-wrap gap-2 md:gap-4">
         <button
           onClick={() => setActiveSection('category')}
           className={`px-4 py-2 rounded ${
