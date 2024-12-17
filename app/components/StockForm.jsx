@@ -4,18 +4,49 @@
 import { useState, useEffect } from 'react';
 import LoadingSpinner from './LoadingSpinner';
 
-// Helper functions moved outside component
-const formatDate = (date) => {
-  const d = new Date(date);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${year}-${month}-${day}`;
+// Helper functions for date formatting
+const formatDateForInput = (dateString) => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    // Adjust for timezone offset
+    const timezoneOffset = date.getTimezoneOffset() * 60000; // Convert to milliseconds
+    const adjustedDate = new Date(date.getTime() - timezoneOffset);
+    return adjustedDate.toISOString().split('T')[0];
+  } catch (error) {
+    console.error('Date formatting error:', error);
+    return '';
+  }
+};
+
+const formatDateForDisplay = (dateString) => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'N/A';
+    // Adjust for timezone offset
+    const timezoneOffset = date.getTimezoneOffset() * 60000;
+    const adjustedDate = new Date(date.getTime() - timezoneOffset);
+    
+    // Format as DD-MM-YYYY
+    const day = String(adjustedDate.getUTCDate()).padStart(2, '0');
+    const month = String(adjustedDate.getUTCMonth() + 1).padStart(2, '0');
+    const year = adjustedDate.getUTCFullYear();
+    return `${day}-${month}-${year}`;
+  } catch (error) {
+    console.error('Date display error:', error);
+    return 'N/A';
+  }
 };
 
 const parseDate = (dateString) => {
-  const [year, month, day] = dateString.split('-');
-  return new Date(year, month - 1, day).toISOString();
+  try {
+    const [day, month, year] = dateString.split('-');
+    // Create date in UTC
+    return new Date(Date.UTC(year, month - 1, day));
+  } catch (error) {
+    console.error('Date parsing error:', error);
+    return new Date();
+  }
 };
 
 export default function StockForm() {
@@ -25,7 +56,7 @@ export default function StockForm() {
     modelName: '',
     categoryId: '',
     quantity: '',
-    date: formatDate(new Date())
+    date: formatDateForInput(new Date())
   });
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState({ text: '', type: '' });
@@ -35,6 +66,10 @@ export default function StockForm() {
     fetchCategories();
     fetchStocks();
   }, []);
+
+  useEffect(() => {
+    console.log('Fetched stocks:', stocks); // Add this for debugging
+  }, [stocks]);
 
   const fetchCategories = async () => {
     try {
@@ -79,7 +114,7 @@ export default function StockForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.modelName || !formData.categoryId || !formData.quantity) {
+    if (!formData.modelName || !formData.categoryId || !formData.quantity || !formData.date) {
       showMessage('All fields are required', 'error');
       return;
     }
@@ -95,7 +130,7 @@ export default function StockForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          date: parseDate(formData.date)
+          date: formData.date // Send as DD-MM-YYYY
         }),
       });
 
@@ -108,7 +143,7 @@ export default function StockForm() {
           modelName: '',
           categoryId: '',
           quantity: '',
-          date: formatDate(new Date())
+          date: formatDateForInput(new Date())
         });
         setEditingId(null);
         await fetchStocks();
@@ -128,7 +163,7 @@ export default function StockForm() {
       modelName: stock.modelName,
       categoryId: stock.categoryId,
       quantity: stock.initialQuantity.toString(),
-      date: formatDate(new Date(stock.date))
+      date: formatDateForInput(stock.date)
     });
     setEditingId(stock._id);
   };
@@ -163,7 +198,7 @@ export default function StockForm() {
       modelName: '',
       categoryId: '',
       quantity: '',
-      date: formatDate(new Date())
+      date: formatDateForInput(new Date())
     });
     setEditingId(null);
   };
@@ -239,7 +274,7 @@ export default function StockForm() {
             <input
               type="date"
               name="date"
-              value={formData.date || ''}
+              value={formData.date}
               onChange={handleChange}
               className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={loading}
@@ -271,26 +306,26 @@ export default function StockForm() {
         </div>
       </form>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white rounded-lg shadow-md overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Model Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Category
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Initial Qty
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Available Qty
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
                 Actions
               </th>
             </tr>
@@ -298,33 +333,33 @@ export default function StockForm() {
           <tbody className="bg-white divide-y divide-gray-200">
             {stocks.map((stock) => (
               <tr key={stock._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                   {stock.modelName}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                   {stock.category}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
                   {stock.initialQuantity}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
                   {stock.availableQuantity}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {new Date(stock.date).toLocaleDateString()}
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                  {formatDateForDisplay(stock.date)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium space-x-2">
                   <button
                     onClick={() => handleEdit(stock)}
                     disabled={loading}
-                    className="text-blue-600 hover:text-blue-900 mr-4 disabled:opacity-50"
+                    className="inline-flex items-center px-2 py-1 text-sm text-blue-600 hover:text-blue-900 disabled:opacity-50"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(stock._id)}
                     disabled={loading}
-                    className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                    className="inline-flex items-center px-2 py-1 text-sm text-red-600 hover:text-red-900 disabled:opacity-50"
                   >
                     Delete
                   </button>

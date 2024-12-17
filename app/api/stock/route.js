@@ -3,53 +3,48 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get('categoryId');
-    const marketplaceId = searchParams.get('marketplaceId');
-    const searchTerm = searchParams.get('search');
-
     const client = await clientPromise;
     const db = client.db('flikertag');
 
-    let query = {};
-    
-    if (categoryId) {
-      query.categoryId = new ObjectId(categoryId);
-    }
-    if (marketplaceId) {
-      query.marketplaceId = new ObjectId(marketplaceId);
-    }
-    if (searchTerm) {
-      query.modelName = { $regex: searchTerm, $options: 'i' };
-    }
-
-    const stocks = await db.collection('stock').aggregate([
-      { $match: query },
-      {
-        $lookup: {
-          from: 'category',
-          localField: 'categoryId',
-          foreignField: '_id',
-          as: 'categoryData'
+    const stocks = await db.collection('stock')
+      .aggregate([
+        {
+          $lookup: {
+            from: 'category',
+            localField: 'categoryId',
+            foreignField: '_id',
+            as: 'categoryInfo'
+          }
+        },
+        {
+          $unwind: '$categoryInfo'
+        },
+        {
+          $project: {
+            _id: 1,
+            modelName: 1,
+            initialQuantity: 1,
+            availableQuantity: 1,
+            date: 1,
+            category: '$categoryInfo.name',
+            categoryId: 1
+          }
         }
-      },
-      {
-        $project: {
-          modelName: 1,
-          initialQuantity: 1,
-          availableQuantity: 1,
-          createdAt: 1,
-          categoryId: 1,
-          category: { $arrayElemAt: ['$categoryData.name', 0] }
-        }
-      }
-    ]).toArray();
+      ])
+      .toArray();
 
-    return new Response(JSON.stringify(stocks), {
+    // Format dates before sending response
+    const formattedStocks = stocks.map(stock => ({
+      ...stock,
+      date: stock.date.toISOString() // Ensure date is in ISO format
+    }));
+
+    return new Response(JSON.stringify(formattedStocks), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
-
   } catch (error) {
     console.error('Error fetching stocks:', error);
     return new Response(

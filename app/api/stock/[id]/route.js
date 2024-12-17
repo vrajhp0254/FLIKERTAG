@@ -2,14 +2,24 @@ import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
-// Update stock
-export async function PUT(request, { params }) {
+const parseDate = (dateString) => {
   try {
-    const id = await Promise.resolve(params.id);
-    const body = await request.json();
-    const { modelName, categoryId, quantity } = body;
+    const [day, month, year] = dateString.split('-');
+    return new Date(Date.UTC(year, month - 1, day));
+  } catch (error) {
+    console.error('Date parsing error:', error);
+    return new Date();
+  }
+};
 
-    if (!modelName || !categoryId || !quantity) {
+// Update stock
+export async function PUT(request, context) {
+  try {
+    const id = context.params.id;
+    const body = await request.json();
+    const { modelName, categoryId, quantity, date } = body;
+
+    if (!modelName || !categoryId || !quantity || !date) {
       return NextResponse.json(
         { message: 'All fields are required' },
         { status: 400 }
@@ -19,7 +29,6 @@ export async function PUT(request, { params }) {
     const client = await clientPromise;
     const db = client.db('flikertag');
 
-    // Check if category exists
     const categoryExists = await db.collection('category').findOne({
       _id: new ObjectId(categoryId)
     });
@@ -31,19 +40,8 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Check for duplicate model name in the same category (excluding current stock)
-    const duplicate = await db.collection('stock').findOne({
-      _id: { $ne: new ObjectId(id) },
-      categoryId: new ObjectId(categoryId),
-      modelName: { $regex: new RegExp(`^${modelName}$`, 'i') }
-    });
-
-    if (duplicate) {
-      return NextResponse.json(
-        { message: 'Model name already exists in this category' },
-        { status: 409 }
-      );
-    }
+    const category = categoryExists.name;
+    const parsedDate = parseDate(date);
 
     const result = await db.collection('stock').updateOne(
       { _id: new ObjectId(id) },
@@ -51,8 +49,10 @@ export async function PUT(request, { params }) {
         $set: { 
           modelName,
           categoryId: new ObjectId(categoryId),
+          category,
           initialQuantity: parseInt(quantity),
           availableQuantity: parseInt(quantity),
+          date: parsedDate,
           updatedAt: new Date()
         } 
       }
@@ -65,7 +65,16 @@ export async function PUT(request, { params }) {
       );
     }
 
-    return NextResponse.json({ message: 'Stock updated successfully' });
+    return NextResponse.json({ 
+      message: 'Stock updated successfully',
+      stock: {
+        modelName,
+        category,
+        initialQuantity: parseInt(quantity),
+        availableQuantity: parseInt(quantity),
+        date: parsedDate
+      }
+    });
   } catch (error) {
     console.error('Error updating stock:', error);
     return NextResponse.json(
@@ -76,9 +85,9 @@ export async function PUT(request, { params }) {
 }
 
 // Delete stock
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
   try {
-    const id = await Promise.resolve(params.id);
+    const id = context.params.id;
     const client = await clientPromise;
     const db = client.db('flikertag');
 

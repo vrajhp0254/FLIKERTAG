@@ -104,6 +104,7 @@ export async function GET(request) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const transactionType = searchParams.get('transactionType');
+    const marketplaceId = searchParams.get('marketplaceId');
 
     const client = await clientPromise;
     const db = client.db('flikertag');
@@ -121,6 +122,9 @@ export async function GET(request) {
     }
     if (transactionType) {
       query.transactionType = transactionType;
+    }
+    if (marketplaceId) {
+      query.marketplaceId = new ObjectId(marketplaceId);
     }
 
     const transactions = await db.collection('transactions').aggregate([
@@ -154,6 +158,7 @@ export async function GET(request) {
           date: 1,
           modelName: '$stockData.modelName',
           categoryName: '$categoryData.name',
+          marketplaceName: 1,
           initialQuantity: '$stockData.initialQuantity',
           availableQuantity: '$stockData.availableQuantity',
           transactionType: 1,

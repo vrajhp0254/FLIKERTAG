@@ -90,7 +90,7 @@ export default function StockCard({ stock, onUpdate }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden relative">
+    <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden relative w-80">
       {/* Notification with close button */}
       {notification.show && (
         <div className={`
@@ -123,59 +123,73 @@ export default function StockCard({ stock, onUpdate }) {
         </div>
       )}
 
-      {/* Header Section */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4">
-        <h3 className="text-xl font-bold text-white mb-2">{stock.modelName}</h3>
+      {/* Header Section - Updated styling */}
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-center">
+        <h3 className="text-xl font-bold text-white mb-2 truncate">{stock.modelName}</h3>
         <span className="inline-block bg-blue-400 text-white text-sm px-3 py-1 rounded-full">
           {stock.category}
         </span>
       </div>
 
-      {/* Stock Information */}
+      {/* Stock Information - Updated layout */}
       <div className="p-4 bg-gray-50">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-            <p className="text-gray-500 text-sm">Initial Stock</p>
-            <p className="text-2xl font-bold text-gray-700">{stock.initialQuantity}</p>
+        <div className="flex justify-between gap-2">
+          <div className="flex-1 text-center p-3 bg-white rounded-lg shadow-sm">
+            <p className="text-gray-500 text-xs">Initial</p>
+            <p className="text-xl font-bold text-gray-700">{stock.initialQuantity}</p>
           </div>
-          <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-            <p className="text-gray-500 text-sm">Available</p>
-            <p className="text-2xl font-bold text-gray-700">{stock.availableQuantity}</p>
+          <div className="flex-1 text-center p-3 bg-white rounded-lg shadow-sm">
+            <p className="text-gray-500 text-xs">Available</p>
+            <p className="text-xl font-bold text-gray-700">{stock.availableQuantity}</p>
           </div>
         </div>
       </div>
 
-      {/* Transaction Form */}
+      {/* Transaction Form - Condensed layout */}
       <div className="p-4">
-        <div className="space-y-3">
-          {/* Quantity Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-            <input
-              type="number"
-              min="1"
-              max={stock.availableQuantity}
-              value={transactionData.quantity}
-              onChange={(e) => setTransactionData(prev => ({
-                ...prev,
-                quantity: e.target.value
-              }))}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              placeholder="Enter quantity"
-            />
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            {/* Quantity Input */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
+              <input
+                type="number"
+                min="1"
+                max={stock.availableQuantity}
+                value={transactionData.quantity}
+                onChange={(e) => setTransactionData(prev => ({
+                  ...prev,
+                  quantity: e.target.value
+                }))}
+                className="w-full p-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* Date Input */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Date</label>
+              <input
+                type="date"
+                value={transactionData.date}
+                onChange={(e) => setTransactionData(prev => ({
+                  ...prev,
+                  date: e.target.value
+                }))}
+                className="w-full p-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
           </div>
 
           {/* Marketplace Select */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Marketplace</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Marketplace</label>
             <select
               value={transactionData.marketplaceId}
               onChange={(e) => setTransactionData(prev => ({
                 ...prev,
                 marketplaceId: e.target.value
               }))}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              required
+              className="w-full p-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Select Marketplace</option>
               {marketplaces.map(marketplace => (
@@ -186,31 +200,16 @@ export default function StockCard({ stock, onUpdate }) {
             </select>
           </div>
 
-          {/* Date Input */}
+          {/* Return Type Select */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-            <input
-              type="date"
-              value={transactionData.date}
-              onChange={(e) => setTransactionData(prev => ({
-                ...prev,
-                date: e.target.value
-              }))}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              required
-            />
-          </div>
-
-          {/* Transaction Type Select */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Return Type</label>
             <select
               value={transactionData.transactionType}
               onChange={(e) => setTransactionData(prev => ({
                 ...prev,
                 transactionType: e.target.value
               }))}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              className="w-full p-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="customer">Customer</option>
               <option value="courier">Courier</option>
@@ -222,7 +221,7 @@ export default function StockCard({ stock, onUpdate }) {
             <button
               onClick={() => handleTransaction('sell')}
               disabled={loading || !transactionData.marketplaceId || stock.availableQuantity === 0}
-              className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 
+              className="flex-1 px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 
                 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
             >
@@ -231,7 +230,7 @@ export default function StockCard({ stock, onUpdate }) {
             <button
               onClick={() => handleTransaction('return')}
               disabled={loading || !transactionData.marketplaceId}
-              className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 
+              className="flex-1 px-3 py-1.5 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 
                 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             >
