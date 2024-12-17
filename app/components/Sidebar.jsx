@@ -21,6 +21,11 @@ export default function Sidebar() {
               <div className="block px-4 py-2 hover:bg-gray-700">Reports</div>
             </Link>
           </li>
+          <li className="whitespace-nowrap">
+            <Link href="/netreport">
+              <div className="block px-4 py-2 hover:bg-gray-700">Net Report</div>
+            </Link>
+          </li>
         </ul>
       </nav>
     </div>

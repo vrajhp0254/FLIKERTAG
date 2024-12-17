@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import StockCard from '../components/StockCard';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function Inventory() {
   const [stocks, setStocks] = useState([]);
@@ -67,7 +68,7 @@ export default function Inventory() {
   const hasActiveFilters = filters.categoryId || filters.search;
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <LoadingSpinner />;
   }
 
   return (

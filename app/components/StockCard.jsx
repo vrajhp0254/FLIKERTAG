@@ -31,9 +31,10 @@ export default function StockCard({ stock, onUpdate }) {
 
   const showNotification = (message, type) => {
     setNotification({ show: true, message, type });
-    setTimeout(() => {
-      setNotification({ show: false, message: '', type: '' });
-    }, 3000);
+  };
+
+  const hideNotification = () => {
+    setNotification({ show: false, message: '', type: '' });
   };
 
   const handleTransaction = async (type) => {
@@ -89,29 +90,67 @@ export default function StockCard({ stock, onUpdate }) {
   };
 
   return (
-    <div className="bg-white p-3 md:p-4 rounded-lg shadow relative">
+    <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden relative">
+      {/* Notification with close button */}
       {notification.show && (
-        <div className={`absolute top-2 right-2 left-2 p-2 rounded text-white text-sm ${
-          notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-        }`}>
-          {notification.message}
+        <div className={`
+          fixed inset-x-0 top-0 z-50 p-4 
+          ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}
+          text-white shadow-lg
+        `}>
+          <div className="container mx-auto flex items-center justify-between">
+            <div className="flex items-center">
+              {notification.type === 'success' ? (
+                <svg className="w-6 h-6 mr-2" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                  <path d="M5 13l4 4L19 7"></path>
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 mr-2" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+              )}
+              <span className="text-sm font-medium">{notification.message}</span>
+            </div>
+            <button
+              onClick={hideNotification}
+              className="text-white hover:text-gray-200 focus:outline-none"
+            >
+              <svg className="w-5 h-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
         </div>
       )}
 
-      <h3 className="text-base md:text-lg font-semibold mb-2">{stock.modelName}</h3>
-      <div className="space-y-1 md:space-y-2 text-sm md:text-base">
-        <p className="text-sm">
-          <span className="font-medium">Category:</span> {stock.category}
-        </p>
-        <p className="text-sm">
-          <span className="font-medium">Entry Stock:</span> {stock.initialQuantity}
-        </p>
-        <p className="text-sm">
-          <span className="font-medium">Available Stock:</span> {stock.availableQuantity}
-        </p>
-        
-        <div className="border-t pt-4 mt-4">
-          <div className="flex flex-col space-y-2">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4">
+        <h3 className="text-xl font-bold text-white mb-2">{stock.modelName}</h3>
+        <span className="inline-block bg-blue-400 text-white text-sm px-3 py-1 rounded-full">
+          {stock.category}
+        </span>
+      </div>
+
+      {/* Stock Information */}
+      <div className="p-4 bg-gray-50">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+            <p className="text-gray-500 text-sm">Initial Stock</p>
+            <p className="text-2xl font-bold text-gray-700">{stock.initialQuantity}</p>
+          </div>
+          <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+            <p className="text-gray-500 text-sm">Available</p>
+            <p className="text-2xl font-bold text-gray-700">{stock.availableQuantity}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Transaction Form */}
+      <div className="p-4">
+        <div className="space-y-3">
+          {/* Quantity Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
             <input
               type="number"
               min="1"
@@ -121,17 +160,21 @@ export default function StockCard({ stock, onUpdate }) {
                 ...prev,
                 quantity: e.target.value
               }))}
-              className="w-full p-1 border rounded"
-              placeholder="Quantity"
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              placeholder="Enter quantity"
             />
-            
+          </div>
+
+          {/* Marketplace Select */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Marketplace</label>
             <select
               value={transactionData.marketplaceId}
               onChange={(e) => setTransactionData(prev => ({
                 ...prev,
                 marketplaceId: e.target.value
               }))}
-              className="w-full p-1 border rounded"
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               required
             >
               <option value="">Select Marketplace</option>
@@ -141,7 +184,11 @@ export default function StockCard({ stock, onUpdate }) {
                 </option>
               ))}
             </select>
+          </div>
 
+          {/* Date Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
             <input
               type="date"
               value={transactionData.date}
@@ -149,38 +196,47 @@ export default function StockCard({ stock, onUpdate }) {
                 ...prev,
                 date: e.target.value
               }))}
-              className="w-full p-1 border rounded"
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               required
             />
+          </div>
 
+          {/* Transaction Type Select */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
             <select
               value={transactionData.transactionType}
               onChange={(e) => setTransactionData(prev => ({
                 ...prev,
                 transactionType: e.target.value
               }))}
-              className="w-full p-1 border rounded"
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             >
               <option value="customer">Customer</option>
               <option value="courier">Courier</option>
             </select>
-            
-            <div className="flex space-x-2">
-              <button
-                onClick={() => handleTransaction('sell')}
-                disabled={loading || !transactionData.marketplaceId || stock.availableQuantity === 0}
-                className="flex-1 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
-              >
-                Sell
-              </button>
-              <button
-                onClick={() => handleTransaction('return')}
-                disabled={loading || !transactionData.marketplaceId}
-                className="flex-1 px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-              >
-                Return
-              </button>
-            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-2 pt-2">
+            <button
+              onClick={() => handleTransaction('sell')}
+              disabled={loading || !transactionData.marketplaceId || stock.availableQuantity === 0}
+              className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 
+                disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200
+                focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            >
+              {loading ? 'Processing...' : 'Sell'}
+            </button>
+            <button
+              onClick={() => handleTransaction('return')}
+              disabled={loading || !transactionData.marketplaceId}
+              className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 
+                disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200
+                focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            >
+              {loading ? 'Processing...' : 'Return'}
+            </button>
           </div>
         </div>
       </div>

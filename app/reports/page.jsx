@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function Reports() {
   const [reports, setReports] = useState([]);
@@ -76,9 +77,7 @@ export default function Reports() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">
-      <div className="text-lg">Loading...</div>
-    </div>;
+    return <LoadingSpinner />;
   }
 
   return (
@@ -157,55 +156,52 @@ export default function Reports() {
         )}
       </div>
 
-      {/* Reports Table */}
-      <div className="overflow-x-auto -mx-4 md:mx-0">
-        <div className="min-w-[800px] md:w-full">
-          <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
-            <thead className="bg-gray-100">
+      {/* Updated Transactions Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left">Date</th>
-                <th className="px-4 py-3 text-left">Model Name</th>
-                <th className="px-4 py-3 text-left">Category</th>
-                <th className="px-4 py-3 text-left">Marketplace</th>
-                <th className="px-4 py-3 text-right">Entry Stock</th>
-                <th className="px-4 py-3 text-right">Available Stock</th>
-                <th className="px-4 py-3 text-center">Transaction Type</th>
-                <th className="px-4 py-3 text-center">Return Type</th>
-                <th className="px-4 py-3 text-right">Quantity</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Entry Stock</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Available Stock</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Return Type</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              {reports.map((report) => (
-                <tr key={report._id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    {new Date(report.date).toLocaleDateString()}
+            <tbody className="bg-white divide-y divide-gray-200">
+              {reports.map((transaction, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {new Date(transaction.date).toLocaleDateString()}
                   </td>
-                  <td className="px-4 py-3">{report.modelName}</td>
-                  <td className="px-4 py-3">{report.categoryName}</td>
-                  <td className="px-4 py-3">{report.marketplaceName}</td>
-                  <td className="px-4 py-3 text-right">{report.initialQuantity}</td>
-                  <td className="px-4 py-3 text-right">{report.availableQuantity}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      report.transactionType === 'sell' 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {report.transactionType}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {transaction.modelName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {transaction.categoryName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {transaction.initialQuantity}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {transaction.availableQuantity}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      ${transaction.transactionType === 'sell' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                      {transaction.transactionType === 'sell' ? 'Sell' : 'Return'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    {report.returnType ? (
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        report.returnType === 'customer' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {report.returnType}
-                      </span>
-                    ) : '-'}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {transaction.returnType || '-'}
                   </td>
-                  <td className="px-4 py-3 text-right">{report.quantity}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
+                    {transaction.quantity}
+                  </td>
                 </tr>
               ))}
             </tbody>

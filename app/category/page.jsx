@@ -1,14 +1,13 @@
 'use client';
-
 import { useState, useEffect } from 'react';
-import LoadingSpinner from './LoadingSpinner';
+import LoadingSpinner from '../components/LoadingSpinner';
 
-export default function CategoryForm({ onCategoryAdded }) {
+export default function Category() {
   const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({ name: '' });
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState({ text: '', type: '' });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchCategories();
@@ -41,7 +40,6 @@ export default function CategoryForm({ onCategoryAdded }) {
       return;
     }
 
-    setLoading(true);
     try {
       const url = editingId 
         ? `/api/category/${editingId}` 
@@ -55,21 +53,18 @@ export default function CategoryForm({ onCategoryAdded }) {
 
       if (response.ok) {
         showMessage(
-          `Category ${editingId ? 'updated' : 'added'} successfully`, 
+          `Category ${editingId ? 'updated' : 'created'} successfully`, 
           'success'
         );
         setFormData({ name: '' });
         setEditingId(null);
-        await fetchCategories();
-        if (onCategoryAdded) onCategoryAdded();
+        fetchCategories();
       } else {
         const error = await response.json();
         showMessage(error.message || 'Error processing request', 'error');
       }
     } catch (error) {
       showMessage('Error processing request', 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -83,7 +78,6 @@ export default function CategoryForm({ onCategoryAdded }) {
       return;
     }
 
-    setLoading(true);
     try {
       const response = await fetch(`/api/category/${id}`, {
         method: 'DELETE',
@@ -91,16 +85,13 @@ export default function CategoryForm({ onCategoryAdded }) {
 
       if (response.ok) {
         showMessage('Category deleted successfully', 'success');
-        await fetchCategories();
-        if (onCategoryAdded) onCategoryAdded();
+        fetchCategories();
       } else {
         const error = await response.json();
         showMessage(error.message || 'Error deleting category', 'error');
       }
     } catch (error) {
       showMessage('Error deleting category', 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -109,62 +100,53 @@ export default function CategoryForm({ onCategoryAdded }) {
     setEditingId(null);
   };
 
-  if (loading && categories.length === 0) {
+  if (loading) {
     return <LoadingSpinner />;
   }
 
   return (
-    <div className="w-full max-w-lg mx-auto p-4">
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Category Management</h1>
+
+      {/* Message Display */}
       {message.text && (
-        <div className={`mb-4 p-3 rounded-lg text-sm ${
+        <div className={`mb-4 p-4 rounded-lg ${
           message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
         }`}>
           {message.text}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="mb-6 bg-white p-4 rounded-lg shadow-md">
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category Name
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ name: e.target.value })}
-              placeholder="Enter category name"
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={loading}
-            />
-          </div>
-          <div className="flex gap-2">
+      {/* Category Form */}
+      <form onSubmit={handleSubmit} className="mb-8 bg-white p-4 rounded-lg shadow">
+        <div className="flex gap-4">
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ name: e.target.value })}
+            placeholder="Enter category name"
+            className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            {editingId ? 'Update' : 'Add'} Category
+          </button>
+          {editingId && (
             <button
-              type="submit"
-              disabled={loading}
-              className={`flex-1 px-4 py-2 text-white rounded-lg ${
-                loading 
-                  ? 'bg-blue-400 cursor-not-allowed' 
-                  : 'bg-blue-500 hover:bg-blue-600'
-              } focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+              type="button"
+              onClick={handleCancel}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
-              {loading ? 'Processing...' : editingId ? 'Update Category' : 'Add Category'}
+              Cancel
             </button>
-            {editingId && (
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={loading}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </form>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      {/* Categories List */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -185,15 +167,13 @@ export default function CategoryForm({ onCategoryAdded }) {
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => handleEdit(category)}
-                    disabled={loading}
-                    className="text-blue-600 hover:text-blue-900 mr-4 disabled:opacity-50"
+                    className="text-blue-600 hover:text-blue-900 mr-4"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(category._id)}
-                    disabled={loading}
-                    className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                    className="text-red-600 hover:text-red-900"
                   >
                     Delete
                   </button>

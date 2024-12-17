@@ -26,9 +26,18 @@ export async function POST(req) {
       ? stock.availableQuantity - quantity
       : stock.availableQuantity + quantity;
 
+    // Check if new quantity would be negative (for sells)
     if (newQuantity < 0) {
       return new Response(
         JSON.stringify({ message: 'Insufficient stock' }), 
+        { status: 400 }
+      );
+    }
+
+    // Check if new quantity would exceed initial quantity (for returns)
+    if (newQuantity > stock.initialQuantity) {
+      return new Response(
+        JSON.stringify({ message: 'Return quantity exceeds initial stock quantity' }), 
         { status: 400 }
       );
     }
@@ -92,9 +101,9 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get('categoryId');
-    const marketplaceId = searchParams.get('marketplaceId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const transactionType = searchParams.get('transactionType');
 
     const client = await clientPromise;
     const db = client.db('flikertag');
@@ -104,20 +113,58 @@ export async function GET(request) {
     if (categoryId) {
       query.categoryId = new ObjectId(categoryId);
     }
-    if (marketplaceId) {
-      query.marketplaceId = new ObjectId(marketplaceId);
-    }
     if (startDate && endDate) {
       query.date = {
         $gte: new Date(startDate),
         $lte: new Date(endDate)
       };
     }
+    if (transactionType) {
+      query.transactionType = transactionType;
+    }
 
-    const transactions = await db.collection('transactions')
-      .find(query)
-      .sort({ date: -1 })
-      .toArray();
+    const transactions = await db.collection('transactions').aggregate([
+      {
+        $match: query
+      },
+      {
+        $lookup: {
+          from: 'stock',
+          localField: 'stockId',
+          foreignField: '_id',
+          as: 'stockData'
+        }
+      },
+      {
+        $unwind: '$stockData'
+      },
+      {
+        $lookup: {
+          from: 'category',
+          localField: 'categoryId',
+          foreignField: '_id',
+          as: 'categoryData'
+        }
+      },
+      {
+        $unwind: '$categoryData'
+      },
+      {
+        $project: {
+          date: 1,
+          modelName: '$stockData.modelName',
+          categoryName: '$categoryData.name',
+          initialQuantity: '$stockData.initialQuantity',
+          availableQuantity: '$stockData.availableQuantity',
+          transactionType: 1,
+          returnType: 1,
+          quantity: 1
+        }
+      },
+      {
+        $sort: { date: -1 }
+      }
+    ]).toArray();
 
     return new Response(
       JSON.stringify(transactions), 
