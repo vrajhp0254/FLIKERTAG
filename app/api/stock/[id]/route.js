@@ -4,8 +4,12 @@ import { ObjectId } from 'mongodb';
 
 const parseDate = (dateString) => {
   try {
-    const [day, month, year] = dateString.split('-');
-    return new Date(Date.UTC(year, month - 1, day));
+    // If the date is in YYYY-MM-DD format (from input type="date")
+    if (dateString.includes('-')) {
+      const [year, month, day] = dateString.split('-');
+      return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+    }
+    return new Date(dateString);
   } catch (error) {
     console.error('Date parsing error:', error);
     return new Date();
@@ -13,13 +17,13 @@ const parseDate = (dateString) => {
 };
 
 // Update stock
-export async function PUT(request, context) {
+export async function PUT(request, { params }) {
   try {
-    const id = context.params.id;
+    const id = params.id;
     const body = await request.json();
-    const { modelName, categoryId, quantity, date } = body;
+    const { modelName, categoryId, initialQuantity, availableQuantity, date } = body;
 
-    if (!modelName || !categoryId || !quantity || !date) {
+    if (!modelName || !categoryId || !initialQuantity || !availableQuantity || !date) {
       return NextResponse.json(
         { message: 'All fields are required' },
         { status: 400 }
@@ -29,32 +33,37 @@ export async function PUT(request, context) {
     const client = await clientPromise;
     const db = client.db('flikertag');
 
-    const categoryExists = await db.collection('category').findOne({
-      _id: new ObjectId(categoryId)
+    // Get current stock data and check for existing transactions
+    const currentStock = await db.collection('stock').findOne(
+      { _id: new ObjectId(id) }
+    );
+
+    // Check if there are any transactions other than 'initial'
+    const hasTransactions = await db.collection('transactions').findOne({
+      stockId: new ObjectId(id),
+      transactionType: { $ne: 'initial' }
     });
 
-    if (!categoryExists) {
+    // If there are transactions, don't allow changing initial quantity
+    if (hasTransactions && currentStock.initialQuantity !== parseInt(initialQuantity)) {
       return NextResponse.json(
-        { message: 'Category not found' },
-        { status: 404 }
+        { message: 'Cannot modify initial quantity after transactions have been recorded' },
+        { status: 400 }
       );
     }
 
-    const category = categoryExists.name;
-    const parsedDate = parseDate(date);
-
+    // Update the stock
     const result = await db.collection('stock').updateOne(
       { _id: new ObjectId(id) },
-      { 
-        $set: { 
+      {
+        $set: {
           modelName,
           categoryId: new ObjectId(categoryId),
-          category,
-          initialQuantity: parseInt(quantity),
-          availableQuantity: parseInt(quantity),
-          date: parsedDate,
+          initialQuantity: parseInt(initialQuantity),
+          availableQuantity: parseInt(availableQuantity),
+          date: parseDate(date),
           updatedAt: new Date()
-        } 
+        }
       }
     );
 
@@ -65,16 +74,28 @@ export async function PUT(request, context) {
       );
     }
 
-    return NextResponse.json({ 
-      message: 'Stock updated successfully',
-      stock: {
-        modelName,
-        category,
-        initialQuantity: parseInt(quantity),
-        availableQuantity: parseInt(quantity),
-        date: parsedDate
-      }
-    });
+    // Update initial transaction if no other transactions exist
+    if (!hasTransactions && currentStock.initialQuantity !== parseInt(initialQuantity)) {
+      await db.collection('transactions').updateOne(
+        { 
+          stockId: new ObjectId(id),
+          transactionType: 'initial'
+        },
+        {
+          $set: {
+            quantity: parseInt(initialQuantity),
+            availableQuantity: parseInt(availableQuantity),
+            date: parseDate(date),
+            updatedAt: new Date()
+          }
+        }
+      );
+    }
+
+    return NextResponse.json(
+      { message: 'Stock updated successfully' },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Error updating stock:', error);
     return NextResponse.json(
@@ -85,23 +106,12 @@ export async function PUT(request, context) {
 }
 
 // Delete stock
-export async function DELETE(request, context) {
+export async function DELETE(request, { params }) {
   try {
-    const id = context.params.id;
+    const id = params.id;
+    
     const client = await clientPromise;
     const db = client.db('flikertag');
-
-    // Check if stock has any transactions
-    const transactionCount = await db.collection('transactions').countDocuments({
-      stockId: new ObjectId(id)
-    });
-
-    if (transactionCount > 0) {
-      return NextResponse.json(
-        { message: 'Cannot delete stock that has transactions' },
-        { status: 400 }
-      );
-    }
 
     const result = await db.collection('stock').deleteOne({
       _id: new ObjectId(id)
@@ -114,7 +124,10 @@ export async function DELETE(request, context) {
       );
     }
 
-    return NextResponse.json({ message: 'Stock deleted successfully' });
+    return NextResponse.json(
+      { message: 'Stock deleted successfully' },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Error deleting stock:', error);
     return NextResponse.json(

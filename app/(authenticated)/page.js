@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import CategoryForm from './components/CategoryForm';
-import MarketplaceForm from './components/MarketplaceForm';
-import StockForm from './components/StockForm';
+import CategoryForm from '../components/CategoryForm';
+import MarketplaceForm from '../components/MarketplaceForm';
+import StockForm from '../components/StockForm';
 
 export default function InventorySetup() {
   const [activeSection, setActiveSection] = useState(null);

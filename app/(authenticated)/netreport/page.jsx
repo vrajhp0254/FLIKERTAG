@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import LoadingSpinner from '../components/LoadingSpinner';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function NetReport() {
   const [reports, setReports] = useState([]);
@@ -117,25 +117,25 @@ export default function NetReport() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {report.modelName}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {report.categoryName}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {report.entryStock}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {report.availableStock}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {report.totalSell}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {report.courierReturn}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {report.customerReturn}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {report.netSell}
                 </td>
               </tr>

@@ -90,7 +90,7 @@ export default function StockCard({ stock, onUpdate }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden relative w-80">
+    <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden relative w-full">
       {/* Notification with close button */}
       {notification.show && (
         <div className={`

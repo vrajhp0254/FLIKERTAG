@@ -1,5 +1,19 @@
+import { NextResponse } from 'next/server';
 import clientPromise from '../../../lib/mongodb';
 import { ObjectId } from 'mongodb';
+
+const parseDate = (dateString) => {
+  try {
+    if (dateString.includes('-')) {
+      const [year, month, day] = dateString.split('-');
+      return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+    }
+    return new Date(dateString);
+  } catch (error) {
+    console.error('Date parsing error:', error);
+    return new Date();
+  }
+};
 
 export async function GET(request) {
   try {
@@ -33,36 +47,29 @@ export async function GET(request) {
       ])
       .toArray();
 
-    // Format dates before sending response
     const formattedStocks = stocks.map(stock => ({
       ...stock,
-      date: stock.date.toISOString() // Ensure date is in ISO format
+      date: stock.date.toISOString()
     }));
 
-    return new Response(JSON.stringify(formattedStocks), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    return NextResponse.json(formattedStocks, { status: 200 });
   } catch (error) {
     console.error('Error fetching stocks:', error);
-    return new Response(
-      JSON.stringify({ message: 'Error fetching stocks' }), 
+    return NextResponse.json(
+      { message: 'Error fetching stocks' }, 
       { status: 500 }
     );
   }
 }
 
-export async function POST(req) {
+export async function POST(request) {
   try {
-    const body = await req.json();
-    const { modelName, categoryId, quantity, date } = body;
+    const body = await request.json();
+    const { modelName, categoryId, initialQuantity, availableQuantity, date } = body;
 
-    // Validate required fields
-    if (!modelName || !categoryId || !quantity || !date) {
-      return new Response(
-        JSON.stringify({ message: 'Model name, category, quantity, and date are required' }), 
+    if (!modelName || !categoryId || !initialQuantity || !availableQuantity || !date) {
+      return NextResponse.json(
+        { message: 'All fields are required' },
         { status: 400 }
       );
     }
@@ -70,54 +77,41 @@ export async function POST(req) {
     const client = await clientPromise;
     const db = client.db('flikertag');
 
-    // Verify category exists
-    const category = await db.collection('category').findOne({ 
-      _id: new ObjectId(categoryId) 
-    });
-
-    if (!category) {
-      return new Response(
-        JSON.stringify({ message: 'Category not found' }), 
-        { status: 404 }
-      );
-    }
-
-    // Create stock
-    const result = await db.collection('stock').insertOne({
+    const stockResult = await db.collection('stock').insertOne({
       modelName,
       categoryId: new ObjectId(categoryId),
-      initialQuantity: parseInt(quantity),
-      availableQuantity: parseInt(quantity),
-      date: new Date(date),
+      initialQuantity: parseInt(initialQuantity),
+      availableQuantity: parseInt(availableQuantity),
+      date: parseDate(date),
       createdAt: new Date()
     });
 
-    return new Response(
-      JSON.stringify({
-        message: 'Stock added successfully',
-        stock: {
-          id: result.insertedId,
-          modelName,
-          initialQuantity: parseInt(quantity),
-          availableQuantity: parseInt(quantity),
-          date
-        }
-      }), 
-      {
-        status: 201,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
+    const category = await db.collection('category').findOne(
+      { _id: new ObjectId(categoryId) }
     );
 
+    await db.collection('transactions').insertOne({
+      stockId: stockResult.insertedId,
+      categoryId: new ObjectId(categoryId),
+      modelName: modelName,
+      categoryName: category.name,
+      quantity: parseInt(initialQuantity),
+      previousAvailableQuantity: 0,
+      newAvailableQuantity: parseInt(initialQuantity),
+      transactionType: 'initial',
+      date: parseDate(date),
+      createdAt: new Date(),
+      isInitialTransaction: true
+    });
+
+    return NextResponse.json(
+      { message: 'Stock created successfully', id: stockResult.insertedId },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error('Stock creation error:', error);
-    return new Response(
-      JSON.stringify({ 
-        message: 'Error creating stock',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
-      }), 
+    console.error('Error creating stock:', error);
+    return NextResponse.json(
+      { message: 'Error creating stock' },
       { status: 500 }
     );
   }

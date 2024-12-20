@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import StockCard from '../components/StockCard';
-import LoadingSpinner from '../components/LoadingSpinner';
+import StockCard from '../../components/StockCard';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function Inventory() {
   const [stocks, setStocks] = useState([]);
@@ -125,7 +125,7 @@ export default function Inventory() {
       </div>
 
       {/* Stock Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 p-4 max-w-[1600px] mx-auto">
         {filteredStocks.map(stock => (
           <StockCard
             key={stock._id}

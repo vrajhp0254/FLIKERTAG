@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import LoadingSpinner from '../components/LoadingSpinner';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function Reports() {
   const [reports, setReports] = useState([]);
@@ -14,7 +14,8 @@ export default function Reports() {
     categoryId: '',
     marketplaceId: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    transactionType: ''
   });
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function Reports() {
       if (filters.marketplaceId) queryParams.append('marketplaceId', filters.marketplaceId);
       if (filters.startDate) queryParams.append('startDate', filters.startDate);
       if (filters.endDate) queryParams.append('endDate', filters.endDate);
+      if (filters.transactionType) queryParams.append('transactionType', filters.transactionType);
 
       const response = await fetch(`/api/stock/transaction?${queryParams}`);
       if (!response.ok) {
@@ -72,7 +74,8 @@ export default function Reports() {
       categoryId: '',
       marketplaceId: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      transactionType: ''
     });
   };
 
@@ -86,7 +89,7 @@ export default function Reports() {
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">Category</label>
             <select
@@ -142,6 +145,21 @@ export default function Reports() {
               className="w-full p-2 border rounded"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Transaction Type</label>
+            <select
+              name="transactionType"
+              value={filters.transactionType}
+              onChange={handleFilterChange}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">All Types</option>
+              <option value="sell">Sell</option>
+              <option value="return">Return</option>
+              <option value="initial">Initial Stock Entry</option>
+            </select>
+          </div>
         </div>
 
         {Object.values(filters).some(Boolean) && (
@@ -177,7 +195,11 @@ export default function Reports() {
               {reports.map((transaction, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(transaction.date).toLocaleDateString()}
+                    {new Date(transaction.date).toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric'
+                    }).replace(/\//g, '-')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {transaction.modelName}
@@ -192,12 +214,23 @@ export default function Reports() {
                     {transaction.initialQuantity}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                    {transaction.availableQuantity}
+                    <div>
+                      <div className="text-xs text-gray-500">Previous: {transaction.previousAvailableQuantity}</div>
+                      <div className="font-medium">New: {transaction.newAvailableQuantity}</div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${transaction.transactionType === 'sell' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                      {transaction.transactionType === 'sell' ? 'Sell' : 'Return'}
+                      ${transaction.transactionType === 'sell' 
+                        ? 'bg-red-100 text-red-800' 
+                        : transaction.transactionType === 'return'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-blue-100 text-blue-800'}`}>
+                      {transaction.transactionType === 'sell' 
+                        ? 'Sell' 
+                        : transaction.transactionType === 'return'
+                        ? 'Return'
+                        : 'Initial Stock Entry'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

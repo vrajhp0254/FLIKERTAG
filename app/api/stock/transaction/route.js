@@ -22,9 +22,10 @@ export async function POST(req) {
     }
 
     // Calculate new quantity
+    const currentAvailableQuantity = stock.availableQuantity;
     const newQuantity = transactionType === 'sell' 
-      ? stock.availableQuantity - quantity
-      : stock.availableQuantity + quantity;
+      ? currentAvailableQuantity - parseInt(quantity)
+      : currentAvailableQuantity + parseInt(quantity);
 
     // Check if new quantity would be negative (for sells)
     if (newQuantity < 0) {
@@ -59,7 +60,7 @@ export async function POST(req) {
       { _id: stock.categoryId }
     );
 
-    // Create transaction record
+    // Create transaction record with current available quantity
     await db.collection('transactions').insertOne({
       stockId: new ObjectId(stockId),
       marketplaceId: new ObjectId(marketplaceId),
@@ -68,6 +69,8 @@ export async function POST(req) {
       categoryName: category.name,
       marketplaceName: marketplace.name,
       quantity: parseInt(quantity),
+      previousAvailableQuantity: currentAvailableQuantity,
+      newAvailableQuantity: newQuantity,
       transactionType,
       returnType,
       date: new Date(date),
@@ -160,7 +163,8 @@ export async function GET(request) {
           categoryName: '$categoryData.name',
           marketplaceName: 1,
           initialQuantity: '$stockData.initialQuantity',
-          availableQuantity: '$stockData.availableQuantity',
+          previousAvailableQuantity: 1,
+          newAvailableQuantity: 1,
           transactionType: 1,
           returnType: 1,
           quantity: 1

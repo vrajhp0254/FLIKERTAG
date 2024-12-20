@@ -9,10 +9,7 @@ const formatDateForInput = (dateString) => {
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return '';
-    // Adjust for timezone offset
-    const timezoneOffset = date.getTimezoneOffset() * 60000; // Convert to milliseconds
-    const adjustedDate = new Date(date.getTime() - timezoneOffset);
-    return adjustedDate.toISOString().split('T')[0];
+    return date.toISOString().split('T')[0];
   } catch (error) {
     console.error('Date formatting error:', error);
     return '';
@@ -23,14 +20,9 @@ const formatDateForDisplay = (dateString) => {
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'N/A';
-    // Adjust for timezone offset
-    const timezoneOffset = date.getTimezoneOffset() * 60000;
-    const adjustedDate = new Date(date.getTime() - timezoneOffset);
-    
-    // Format as DD-MM-YYYY
-    const day = String(adjustedDate.getUTCDate()).padStart(2, '0');
-    const month = String(adjustedDate.getUTCMonth() + 1).padStart(2, '0');
-    const year = adjustedDate.getUTCFullYear();
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
     return `${day}-${month}-${year}`;
   } catch (error) {
     console.error('Date display error:', error);
@@ -55,8 +47,9 @@ export default function StockForm() {
   const [formData, setFormData] = useState({
     modelName: '',
     categoryId: '',
-    quantity: '',
-    date: formatDateForInput(new Date())
+    initialQuantity: '',
+    availableQuantity: '',
+    date: ''
   });
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState({ text: '', type: '' });
@@ -114,7 +107,7 @@ export default function StockForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.modelName || !formData.categoryId || !formData.quantity || !formData.date) {
+    if (!formData.modelName || !formData.categoryId || !formData.initialQuantity || !formData.availableQuantity || !formData.date) {
       showMessage('All fields are required', 'error');
       return;
     }
@@ -142,8 +135,9 @@ export default function StockForm() {
         setFormData({
           modelName: '',
           categoryId: '',
-          quantity: '',
-          date: formatDateForInput(new Date())
+          initialQuantity: '',
+          availableQuantity: '',
+          date: ''
         });
         setEditingId(null);
         await fetchStocks();
@@ -162,7 +156,8 @@ export default function StockForm() {
     setFormData({
       modelName: stock.modelName,
       categoryId: stock.categoryId,
-      quantity: stock.initialQuantity.toString(),
+      initialQuantity: stock.initialQuantity.toString(),
+      availableQuantity: stock.availableQuantity.toString(),
       date: formatDateForInput(stock.date)
     });
     setEditingId(stock._id);
@@ -197,8 +192,9 @@ export default function StockForm() {
     setFormData({
       modelName: '',
       categoryId: '',
-      quantity: '',
-      date: formatDateForInput(new Date())
+      initialQuantity: '',
+      availableQuantity: '',
+      date: ''
     });
     setEditingId(null);
   };
@@ -254,15 +250,30 @@ export default function StockForm() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Quantity
+              Initial Quantity
             </label>
             <input
               type="number"
-              name="quantity"
-              value={formData.quantity}
+              name="initialQuantity"
+              value={formData.initialQuantity}
               onChange={handleChange}
-              placeholder="Enter quantity"
-              min="1"
+              placeholder="Enter initial quantity"
+              min="0"
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Available Quantity
+            </label>
+            <input
+              type="number"
+              name="availableQuantity"
+              value={formData.availableQuantity}
+              onChange={handleChange}
+              placeholder="Enter available quantity"
+              min="0"
               className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={loading}
             />
