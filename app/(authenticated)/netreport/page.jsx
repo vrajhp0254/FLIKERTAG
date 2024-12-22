@@ -62,8 +62,10 @@ export default function NetReport() {
             <p className="text-2xl font-bold text-green-600">{reports.length}</p>
           </div>
           <div className="text-center">
-            <p className="text-sm text-gray-500">Categories</p>
-            <p className="text-2xl font-bold text-blue-600">{categories.length}</p>
+            <p className="text-sm text-gray-500">Total Available Stock</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {reports.reduce((sum, report) => sum + report.availableStock, 0)}
+            </p>
           </div>
         </div>
       </div>
@@ -109,7 +111,7 @@ export default function NetReport() {
                 Category
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Entry Stock
+                Initial Stock
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Available Stock

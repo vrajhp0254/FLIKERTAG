@@ -6,7 +6,7 @@ export default function StockCard({ stock, onUpdate }) {
   const [marketplaces, setMarketplaces] = useState([]);
   const [transactionData, setTransactionData] = useState({
     quantity: 1,
-    transactionType: 'customer',
+    transactionType: '',
     marketplaceId: '',
     date: new Date().toISOString().split('T')[0]
   });
@@ -70,7 +70,7 @@ export default function StockCard({ stock, onUpdate }) {
         onUpdate(stock._id, data.newQuantity);
         setTransactionData({
           quantity: 1,
-          transactionType: 'customer',
+          transactionType: '',
           marketplaceId: '',
           date: new Date().toISOString().split('T')[0]
         });
@@ -87,6 +87,12 @@ export default function StockCard({ stock, onUpdate }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const isReturnEnabled = () => {
+    return !loading && 
+           transactionData.marketplaceId && 
+           transactionData.transactionType;
   };
 
   return (
@@ -182,7 +188,9 @@ export default function StockCard({ stock, onUpdate }) {
 
           {/* Marketplace Select */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Marketplace</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Marketplace
+            </label>
             <select
               value={transactionData.marketplaceId}
               onChange={(e) => setTransactionData(prev => ({
@@ -202,7 +210,9 @@ export default function StockCard({ stock, onUpdate }) {
 
           {/* Return Type Select */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Return Type</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Return Type
+            </label>
             <select
               value={transactionData.transactionType}
               onChange={(e) => setTransactionData(prev => ({
@@ -211,6 +221,7 @@ export default function StockCard({ stock, onUpdate }) {
               }))}
               className="w-full p-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
+              <option value="">Select Return Type</option>
               <option value="customer">Customer</option>
               <option value="courier">Courier</option>
             </select>
@@ -229,7 +240,7 @@ export default function StockCard({ stock, onUpdate }) {
             </button>
             <button
               onClick={() => handleTransaction('return')}
-              disabled={loading || !transactionData.marketplaceId}
+              disabled={!isReturnEnabled()}
               className="flex-1 px-3 py-1.5 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 
                 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"

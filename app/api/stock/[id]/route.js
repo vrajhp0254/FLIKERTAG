@@ -109,25 +109,42 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const id = params.id;
-    
     const client = await clientPromise;
     const db = client.db('flikertag');
 
-    const result = await db.collection('stock').deleteOne({
-      _id: new ObjectId(id)
-    });
+    // Get stock details before deletion
+    const stock = await db.collection('stock').findOne(
+      { _id: new ObjectId(id) }
+    );
 
-    if (result.deletedCount === 0) {
+    if (!stock) {
       return NextResponse.json(
         { message: 'Stock not found' },
         { status: 404 }
       );
     }
 
+    // Update all transactions to store stock data
+    await db.collection('transactions').updateMany(
+      { 'stockData.id': id },
+      {
+        $set: {
+          'stockData.isDeleted': true,
+          'stockData.deletedAt': new Date()
+        }
+      }
+    );
+
+    // Delete the stock
+    const result = await db.collection('stock').deleteOne({
+      _id: new ObjectId(id)
+    });
+
     return NextResponse.json(
       { message: 'Stock deleted successfully' },
       { status: 200 }
     );
+
   } catch (error) {
     console.error('Error deleting stock:', error);
     return NextResponse.json(

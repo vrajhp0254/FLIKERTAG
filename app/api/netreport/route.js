@@ -7,13 +7,23 @@ export async function GET() {
     const client = await clientPromise;
     const db = client.db('flikertag');
 
-    // Get all stocks with their transactions and category information
     const stocks = await db.collection('stock').aggregate([
       {
         $lookup: {
           from: 'transactions',
-          localField: '_id',
-          foreignField: 'stockId',
+          let: { stockId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$stockData.id', { $toString: '$$stockId' }] },
+                    { $eq: ['$stockId', '$$stockId'] }
+                  ]
+                }
+              }
+            }
+          ],
           as: 'transactions'
         }
       },
@@ -43,15 +53,13 @@ export async function GET() {
         }
       },
       {
-        $sort: { modelName: 1 } // Sort by model name alphabetically
+        $sort: { modelName: 1 }
       }
     ]).toArray();
 
-    // Process the data to create net reports
     const reports = stocks.map(stock => {
       const transactions = stock.transactions || [];
       
-      // Calculate totals
       const totalSell = transactions
         .filter(t => t.transactionType === 'sell')
         .reduce((sum, t) => t.quantity ? sum + parseInt(t.quantity) : sum, 0);
@@ -83,7 +91,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error generating net report:', error);
     return NextResponse.json(
-      { error: 'Error generating report' },
+      { message: 'Error generating net report' },
       { status: 500 }
     );
   }

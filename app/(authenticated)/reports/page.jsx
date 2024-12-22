@@ -19,20 +19,29 @@ export default function Reports() {
   });
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/category').then(res => res.json()),
-      fetch('/api/marketplace').then(res => res.json())
-    ])
-      .then(([categoriesData, marketplacesData]) => {
-        setCategories(categoriesData);
-        setMarketplaces(marketplacesData);
-        fetchReports();
-      })
-      .catch(error => {
-        console.error('Error fetching data:', error);
-        setError('Error loading filters');
-      });
+    fetchReports();
+    fetchFiltersData();
   }, []);
+
+  const fetchFiltersData = async () => {
+    try {
+      const [categoriesRes, marketplacesRes] = await Promise.all([
+        fetch('/api/category'),
+        fetch('/api/marketplace')
+      ]);
+      
+      const [categoriesData, marketplacesData] = await Promise.all([
+        categoriesRes.json(),
+        marketplacesRes.json()
+      ]);
+
+      setCategories(categoriesData);
+      setMarketplaces(marketplacesData);
+    } catch (error) {
+      console.error('Error fetching filters:', error);
+      setError('Error loading filters');
+    }
+  };
 
   const fetchReports = async () => {
     try {
@@ -205,7 +214,7 @@ export default function Reports() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marketplace</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Entry Stock</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Initial Stock</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Available Stock</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Type</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Return Type</th>
@@ -223,16 +232,18 @@ export default function Reports() {
                     }).replace(/\//g, '-')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {transaction.modelName}
+                    {transaction.stockData?.modelName || transaction.modelName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {transaction.categoryName}
+                    {transaction.categoryData?.name || transaction.categoryName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {transaction.marketplaceName}
+                    {transaction.transactionType === 'initial' 
+                      ? '-' 
+                      : transaction.marketplaceData?.name || transaction.marketplaceName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                    {transaction.initialQuantity}
+                    {transaction.stockData?.initialQuantity || transaction.initialQuantity}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                     <div>
@@ -257,7 +268,7 @@ export default function Reports() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {transaction.returnType || '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                     {transaction.quantity}
                   </td>
                 </tr>

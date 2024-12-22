@@ -46,8 +46,8 @@ export default function Sidebar() {
               src="/logo.png"
               alt="Inventory App Logo"
               width={100}
-              height={100}
-              className="object-contain rounded-lg"
+              height={30}
+              className="object-contain rounded-lg "
               priority
             />
           </div>

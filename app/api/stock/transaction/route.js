@@ -1,5 +1,6 @@
 import clientPromise from '../../../../lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
@@ -21,28 +22,6 @@ export async function POST(req) {
       );
     }
 
-    // Calculate new quantity
-    const currentAvailableQuantity = stock.availableQuantity;
-    const newQuantity = transactionType === 'sell' 
-      ? currentAvailableQuantity - parseInt(quantity)
-      : currentAvailableQuantity + parseInt(quantity);
-
-    // Check if new quantity would be negative (for sells)
-    if (newQuantity < 0) {
-      return new Response(
-        JSON.stringify({ message: 'Insufficient stock' }), 
-        { status: 400 }
-      );
-    }
-
-    // Check if new quantity would exceed initial quantity (for returns)
-    if (newQuantity > stock.initialQuantity) {
-      return new Response(
-        JSON.stringify({ message: 'Return quantity exceeds initial stock quantity' }), 
-        { status: 400 }
-      );
-    }
-
     // Get marketplace details
     const marketplace = await db.collection('marketplace').findOne(
       { _id: new ObjectId(marketplaceId) }
@@ -60,14 +39,48 @@ export async function POST(req) {
       { _id: stock.categoryId }
     );
 
-    // Create transaction record with current available quantity
-    await db.collection('transactions').insertOne({
-      stockId: new ObjectId(stockId),
-      marketplaceId: new ObjectId(marketplaceId),
-      categoryId: stock.categoryId,
-      modelName: stock.modelName,
-      categoryName: category.name,
-      marketplaceName: marketplace.name,
+    // Calculate new quantity based on transaction type and return type
+    const currentAvailableQuantity = stock.availableQuantity;
+    let newQuantity;
+
+    if (transactionType === 'sell') {
+      newQuantity = currentAvailableQuantity - parseInt(quantity);
+    } else if (transactionType === 'return') {
+      newQuantity = returnType === 'courier' 
+        ? currentAvailableQuantity + parseInt(quantity)
+        : currentAvailableQuantity;
+    }
+
+    // Validation checks...
+    if (newQuantity < 0) {
+      return new Response(
+        JSON.stringify({ message: 'Insufficient stock' }), 
+        { status: 400 }
+      );
+    }
+
+    if (newQuantity > stock.initialQuantity) {
+      return new Response(
+        JSON.stringify({ message: 'Return quantity exceeds initial stock quantity' }), 
+        { status: 400 }
+      );
+    }
+
+    // Create transaction with actual data instead of IDs
+    const transaction = {
+      stockData: {
+        id: stock._id.toString(),
+        modelName: stock.modelName,
+        initialQuantity: stock.initialQuantity
+      },
+      categoryData: {
+        id: category._id.toString(),
+        name: category.name
+      },
+      marketplaceData: {
+        id: marketplace._id.toString(),
+        name: marketplace.name
+      },
       quantity: parseInt(quantity),
       previousAvailableQuantity: currentAvailableQuantity,
       newAvailableQuantity: newQuantity,
@@ -75,7 +88,10 @@ export async function POST(req) {
       returnType,
       date: new Date(date),
       createdAt: new Date()
-    });
+    };
+
+    // Insert transaction
+    await db.collection('transactions').insertOne(transaction);
 
     // Update stock quantity
     await db.collection('stock').updateOne(
@@ -83,18 +99,15 @@ export async function POST(req) {
       { $set: { availableQuantity: newQuantity } }
     );
 
-    return new Response(
-      JSON.stringify({
-        message: 'Transaction successful',
-        newQuantity
-      }), 
-      { status: 200 }
-    );
+    return NextResponse.json({
+      message: 'Transaction processed successfully',
+      newQuantity
+    });
 
   } catch (error) {
-    console.error('Transaction error:', error);
-    return new Response(
-      JSON.stringify({ message: 'Error processing transaction' }), 
+    console.error('Error processing transaction:', error);
+    return NextResponse.json(
+      { message: 'Error processing transaction' },
       { status: 500 }
     );
   }
@@ -104,89 +117,64 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get('categoryId');
+    const marketplaceId = searchParams.get('marketplaceId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const transactionType = searchParams.get('transactionType');
-    const marketplaceId = searchParams.get('marketplaceId');
 
     const client = await clientPromise;
     const db = client.db('flikertag');
 
-    let query = {};
-
-    if (categoryId) {
-      query.categoryId = new ObjectId(categoryId);
-    }
-    if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
-    }
-    if (transactionType) {
-      query.transactionType = transactionType;
-    }
-    if (marketplaceId) {
-      query.marketplaceId = new ObjectId(marketplaceId);
-    }
-
     const transactions = await db.collection('transactions').aggregate([
       {
-        $match: query
-      },
-      {
-        $lookup: {
-          from: 'stock',
-          localField: 'stockId',
-          foreignField: '_id',
-          as: 'stockData'
+        $match: {
+          $and: [
+            categoryId ? {
+              $or: [
+                { 'categoryData.id': categoryId },
+                { categoryId: new ObjectId(categoryId) }  // For initial entries
+              ]
+            } : {},
+            marketplaceId ? {
+              $or: [
+                { 'marketplaceData.id': marketplaceId },
+                { marketplaceId: new ObjectId(marketplaceId) }
+              ]
+            } : {},
+            startDate && endDate ? {
+              date: {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+              }
+            } : {},
+            transactionType ? { transactionType } : {}
+          ]
         }
       },
       {
-        $unwind: '$stockData'
-      },
-      {
-        $lookup: {
-          from: 'category',
-          localField: 'categoryId',
-          foreignField: '_id',
-          as: 'categoryData'
+        $addFields: {
+          initialQuantity: {
+            $cond: {
+              if: { $eq: ["$transactionType", "initial"] },
+              then: "$quantity",
+              else: "$stockData.initialQuantity"
+            }
+          }
         }
       },
       {
-        $unwind: '$categoryData'
-      },
-      {
-        $project: {
-          date: 1,
-          modelName: '$stockData.modelName',
-          categoryName: '$categoryData.name',
-          marketplaceName: 1,
-          initialQuantity: '$stockData.initialQuantity',
-          previousAvailableQuantity: 1,
-          newAvailableQuantity: 1,
-          transactionType: 1,
-          returnType: 1,
-          quantity: 1
+        $sort: { 
+          date: -1,
+          _id: -1 
         }
-      },
-      {
-        $sort: { date: -1 }
       }
     ]).toArray();
 
-    return new Response(
-      JSON.stringify(transactions), 
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
-
+    return NextResponse.json(transactions);
   } catch (error) {
     console.error('Error fetching transactions:', error);
-    return new Response(
-      JSON.stringify({ message: 'Error fetching transactions' }), 
+    return NextResponse.json(
+      { message: 'Error fetching transactions' },
       { status: 500 }
     );
   }

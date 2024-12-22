@@ -5,7 +5,7 @@ export async function POST(request) {
     const { username, password } = await request.json();
 
     // Simple authentication check
-    if (username === 'admin' && password === 'admin') {
+    if (username === process.env.User_id && password === process.env.Password) {
       // Set HTTP-only cookie for security
       const response = NextResponse.json(
         { success: true },
@@ -17,7 +17,7 @@ export async function POST(request) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 24 // 24 hours
+        maxAge: 60 * 60 * 2 // 24 hours
       });
 
       return response;

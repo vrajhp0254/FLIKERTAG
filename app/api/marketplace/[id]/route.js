@@ -62,22 +62,11 @@ export async function PUT(request, { params }) {
 // Delete marketplace
 export async function DELETE(request, { params }) {
   try {
-    const id = await Promise.resolve(params.id);
+    const id = params.id;
     const client = await clientPromise;
     const db = client.db('flikertag');
 
-    // Check if marketplace is in use
-    const transactionCount = await db.collection('transactions').countDocuments({
-      marketplaceId: new ObjectId(id)
-    });
-
-    if (transactionCount > 0) {
-      return NextResponse.json(
-        { message: 'Cannot delete marketplace that is in use' },
-        { status: 400 }
-      );
-    }
-
+    // Delete the marketplace
     const result = await db.collection('marketplace').deleteOne({
       _id: new ObjectId(id)
     });
@@ -89,7 +78,17 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    return NextResponse.json({ message: 'Marketplace deleted successfully' });
+    // Update any transactions that used this marketplace
+    await db.collection('transactions').updateMany(
+      { marketplaceId: new ObjectId(id) },
+      { $set: { marketplaceName: 'Deleted Marketplace' } }
+    );
+
+    return NextResponse.json(
+      { message: 'Marketplace deleted successfully' },
+      { status: 200 }
+    );
+
   } catch (error) {
     console.error('Error deleting marketplace:', error);
     return NextResponse.json(
