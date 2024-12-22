@@ -85,7 +85,28 @@ export default function Reports() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Transaction Reports</h1>
+      <div className="flex items-center justify-between mb-8 bg-white p-6 rounded-lg shadow-md">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            Transaction Reports
+          </h1>
+          <p className="text-gray-500 mt-1">Track and analyze your inventory transactions</p>
+        </div>
+        <div className="hidden md:flex items-center space-x-6">
+          <div className="text-center">
+            <p className="text-sm text-gray-500">Total Transactions</p>
+            <p className="text-2xl font-bold text-purple-600">{reports.length}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-gray-500">Today's Transactions</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {reports.filter(t => 
+                new Date(t.date).toDateString() === new Date().toDateString()
+              ).length}
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">

@@ -73,7 +73,26 @@ export default function Inventory() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Inventory</h1>
+      <div className="flex items-center justify-between mb-8 bg-white p-6 rounded-lg shadow-md">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+            Inventory Management
+          </h1>
+          <p className="text-gray-500 mt-1">Manage and track your stock inventory</p>
+        </div>
+        <div className="hidden md:block">
+          <div className="flex items-center space-x-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-500">Total Items</p>
+              <p className="text-2xl font-bold text-blue-600">{stocks.length}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-gray-500">Categories</p>
+              <p className="text-2xl font-bold text-blue-600">{categories.length}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="mb-6">

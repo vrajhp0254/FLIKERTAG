@@ -49,9 +49,26 @@ export default function NetReport() {
 
   return (
     <div className="p-6">
+      <div className="flex items-center justify-between mb-8 bg-white p-6 rounded-lg shadow-md">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+            Net Stock Report
+          </h1>
+          <p className="text-gray-500 mt-1">Overview of your complete stock movement and balance</p>
+        </div>
+        <div className="hidden md:flex items-center space-x-6">
+          <div className="text-center">
+            <p className="text-sm text-gray-500">Total Products</p>
+            <p className="text-2xl font-bold text-green-600">{reports.length}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-gray-500">Categories</p>
+            <p className="text-2xl font-bold text-blue-600">{categories.length}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Net Stock Report</h1>
-        
         {/* Category Filter */}
         <div className="flex items-center space-x-4">
           <select
