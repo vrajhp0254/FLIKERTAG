@@ -95,6 +95,12 @@ export default function StockCard({ stock, onUpdate }) {
            transactionData.transactionType;
   };
 
+  const isSellEnabled = () => {
+    return !loading && 
+           transactionData.marketplaceId && 
+           !transactionData.transactionType;
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden relative w-full">
       {/* Notification with close button */}
@@ -230,7 +236,7 @@ export default function StockCard({ stock, onUpdate }) {
           <div className="flex space-x-2 pt-2">
             <button
               onClick={() => handleTransaction('sell')}
-              disabled={loading || !transactionData.marketplaceId }
+              disabled={!isSellEnabled()}
               className="flex-1 px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 
                 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
