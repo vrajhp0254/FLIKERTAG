@@ -51,13 +51,7 @@ export async function POST(req) {
         : currentAvailableQuantity;
     }
 
-    // Validation checks...
-    if (newQuantity < 0) {
-      return new Response(
-        JSON.stringify({ message: 'Insufficient stock' }), 
-        { status: 400 }
-      );
-    }
+   
 
     if (newQuantity > stock.initialQuantity) {
       return new Response(
