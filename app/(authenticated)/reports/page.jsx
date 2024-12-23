@@ -102,10 +102,7 @@ export default function Reports() {
           <p className="text-gray-500 mt-1">Track and analyze your inventory transactions</p>
         </div>
         <div className="hidden md:flex items-center space-x-6">
-          <div className="text-center">
-            <p className="text-sm text-gray-500">Total Transactions</p>
-            <p className="text-2xl font-bold text-purple-600">{reports.length}</p>
-          </div>
+          
           <div className="text-center">
             <p className="text-sm text-gray-500">Today's Transactions</p>
             <p className="text-2xl font-bold text-blue-600">
@@ -113,6 +110,10 @@ export default function Reports() {
                 new Date(t.date).toDateString() === new Date().toDateString()
               ).length}
             </p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-gray-500">Total Transactions</p>
+            <p className="text-2xl font-bold text-purple-600">{reports.length}</p>
           </div>
         </div>
       </div>

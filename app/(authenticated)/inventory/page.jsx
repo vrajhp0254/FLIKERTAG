@@ -90,10 +90,6 @@ export default function Inventory() {
                 {filteredStocks.length}
               </p>
             </div>
-            <div className="text-center">
-              <p className="text-sm text-gray-500">Categories</p>
-              <p className="text-2xl font-bold text-blue-600">{categories.length}</p>
-            </div>
           </div>
         </div>
       </div>
