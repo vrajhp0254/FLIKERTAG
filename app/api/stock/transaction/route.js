@@ -63,9 +63,9 @@ export async function POST(req) {
     // Create transaction with actual data instead of IDs
     const transaction = {
       stockData: {
-        id: stock._id.toString(),
         modelName: stock.modelName,
-        initialQuantity: stock.initialQuantity
+        initialQuantity: stock.initialQuantity,
+        availableQuantity: stock.availableQuantity
       },
       categoryData: {
         id: category._id.toString(),
@@ -87,7 +87,7 @@ export async function POST(req) {
     // Insert transaction
     await db.collection('transactions').insertOne(transaction);
 
-    // Update stock quantity
+    // Update stock quantity only, not initial quantity
     await db.collection('stock').updateOne(
       { _id: new ObjectId(stockId) },
       { $set: { availableQuantity: newQuantity } }

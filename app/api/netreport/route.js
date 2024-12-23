@@ -11,14 +11,14 @@ export async function GET() {
       {
         $lookup: {
           from: 'transactions',
-          let: { stockId: '$_id' },
+          let: { modelName: '$modelName' },
           pipeline: [
             {
               $match: {
                 $expr: {
                   $or: [
-                    { $eq: ['$stockData.id', { $toString: '$$stockId' }] },
-                    { $eq: ['$stockId', '$$stockId'] }
+                    { $eq: ['$stockData.modelName', '$$modelName'] },
+                    { $eq: ['$modelName', '$$modelName'] }
                   ]
                 }
               }
@@ -40,50 +40,38 @@ export async function GET() {
           path: '$categoryData',
           preserveNullAndEmptyArrays: true
         }
-      },
-      {
-        $project: {
-          _id: 1,
-          modelName: 1,
-          initialQuantity: 1,
-          availableQuantity: 1,
-          categoryId: 1,
-          categoryName: '$categoryData.name',
-          transactions: 1
-        }
-      },
-      {
-        $sort: { modelName: 1 }
       }
     ]).toArray();
 
     const reports = stocks.map(stock => {
       const transactions = stock.transactions || [];
       
+      // Calculate total sell (excluding initial transactions)
       const totalSell = transactions
         .filter(t => t.transactionType === 'sell')
-        .reduce((sum, t) => t.quantity ? sum + parseInt(t.quantity) : sum, 0);
+        .reduce((sum, t) => sum + (parseInt(t.quantity) || 0), 0);
 
+      // Calculate returns
       const courierReturn = transactions
         .filter(t => t.transactionType === 'return' && t.returnType === 'courier')
-        .reduce((sum, t) => t.quantity ? sum + parseInt(t.quantity) : sum, 0);
+        .reduce((sum, t) => sum + (parseInt(t.quantity) || 0), 0);
 
       const customerReturn = transactions
         .filter(t => t.transactionType === 'return' && t.returnType === 'customer')
-        .reduce((sum, t) => t.quantity ? sum + parseInt(t.quantity) : sum, 0);
+        .reduce((sum, t) => sum + (parseInt(t.quantity) || 0), 0);
 
       const totalReturn = courierReturn + customerReturn;
 
       return {
         modelName: stock.modelName,
         categoryId: stock.categoryId ? stock.categoryId.toString() : '',
-        categoryName: stock.categoryName || 'Uncategorized',
+        categoryName: stock.categoryData?.name || 'Uncategorized',
         entryStock: stock.initialQuantity || 0,
         availableStock: stock.availableQuantity || 0,
-        totalSell: totalSell || 0,
-        courierReturn: courierReturn || 0,
-        customerReturn: customerReturn || 0,
-        netSell: (totalSell - totalReturn) || 0
+        totalSell,
+        courierReturn,
+        customerReturn,
+        netSell: totalSell - totalReturn
       };
     });
 

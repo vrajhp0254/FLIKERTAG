@@ -33,33 +33,18 @@ export async function PUT(request, { params }) {
     const client = await clientPromise;
     const db = client.db('specly');
 
-    // Get current stock data and check for existing transactions
+    // Get current stock data and category details
     const currentStock = await db.collection('stock').findOne(
       { _id: new ObjectId(id) }
     );
 
-    // Check if there are any transactions other than 'initial'
-    const hasTransactions = await db.collection('transactions').findOne({
-      stockId: new ObjectId(id),
-      transactionType: { $ne: 'initial' }
-    });
-
-    // If there are transactions, don't allow changing initial quantity
-    if (hasTransactions && currentStock.initialQuantity !== parseInt(initialQuantity)) {
-      return NextResponse.json(
-        { message: 'Cannot modify initial quantity after transactions have been recorded' },
-        { status: 400 }
-      );
-    }
+    const category = await db.collection('category').findOne(
+      { _id: new ObjectId(categoryId) }
+    );
 
     // Calculate the difference in initial quantity
     const quantityDifference = parseInt(initialQuantity) - currentStock.initialQuantity;
     const newAvailableQuantity = currentStock.availableQuantity + quantityDifference;
-
-    // Get category details
-    const category = await db.collection('category').findOne(
-      { _id: new ObjectId(categoryId) }
-    );
 
     // Update the stock
     const result = await db.collection('stock').updateOne(
@@ -83,40 +68,27 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Update stock data in all related transactions
-    await db.collection('transactions').updateMany(
-      {
-        $or: [
-          { 'stockData.id': id },
-          { stockId: new ObjectId(id) }
-        ]
-      },
-      {
-        $set: {
-          'stockData.modelName': modelName,
-          'stockData.initialQuantity': parseInt(initialQuantity),
-          'categoryData.id': categoryId,
-          'categoryData.name': category.name
-        }
-      }
-    );
-
-    // Update initial transaction if no other transactions exist
-    if (!hasTransactions && currentStock.initialQuantity !== parseInt(initialQuantity)) {
-      await db.collection('transactions').updateOne(
-        { 
-          stockId: new ObjectId(id),
-          transactionType: 'initial'
+    // Create a new initial transaction instead of updating existing ones
+    if (quantityDifference !== 0) {
+      const newInitialTransaction = {
+        stockData: {
+          modelName,
+          initialQuantity: parseInt(initialQuantity),
+          availableQuantity: newAvailableQuantity
         },
-        {
-          $set: {
-            quantity: parseInt(initialQuantity),
-            newAvailableQuantity: newAvailableQuantity,
-            date: parseDate(date),
-            updatedAt: new Date()
-          }
-        }
-      );
+        categoryData: {
+          id: category._id.toString(),
+          name: category.name
+        },
+        quantity: Math.abs(quantityDifference),
+        previousAvailableQuantity: currentStock.availableQuantity,
+        newAvailableQuantity: newAvailableQuantity,
+        transactionType: 'initial',
+        date: parseDate(date),
+        createdAt: new Date()
+      };
+
+      await db.collection('transactions').insertOne(newInitialTransaction);
     }
 
     return NextResponse.json(
