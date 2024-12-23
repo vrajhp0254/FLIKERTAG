@@ -48,8 +48,7 @@ export default function StockForm() {
     modelName: '',
     categoryId: '',
     initialQuantity: '',
-    availableQuantity: '',
-    date: ''
+    date: new Date().toISOString().split('T')[0]
   });
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState({ text: '', type: '' });
@@ -107,7 +106,7 @@ export default function StockForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.modelName || !formData.categoryId || !formData.initialQuantity || !formData.availableQuantity || !formData.date) {
+    if (!formData.modelName || !formData.categoryId || !formData.initialQuantity || !formData.date) {
       showMessage('All fields are required', 'error');
       return;
     }
@@ -136,8 +135,7 @@ export default function StockForm() {
           modelName: '',
           categoryId: '',
           initialQuantity: '',
-          availableQuantity: '',
-          date: ''
+          date: new Date().toISOString().split('T')[0]
         });
         setEditingId(null);
         await fetchStocks();
@@ -157,7 +155,6 @@ export default function StockForm() {
       modelName: stock.modelName,
       categoryId: stock.categoryId,
       initialQuantity: stock.initialQuantity.toString(),
-      availableQuantity: stock.availableQuantity.toString(),
       date: formatDateForInput(stock.date)
     });
     setEditingId(stock._id);
@@ -193,8 +190,7 @@ export default function StockForm() {
       modelName: '',
       categoryId: '',
       initialQuantity: '',
-      availableQuantity: '',
-      date: ''
+      date: new Date().toISOString().split('T')[0]
     });
     setEditingId(null);
   };
@@ -265,21 +261,6 @@ export default function StockForm() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Available Quantity
-            </label>
-            <input
-              type="number"
-              name="availableQuantity"
-              value={formData.availableQuantity}
-              onChange={handleChange}
-              placeholder="Enter available quantity"
-              min="0"
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={loading}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
               Date
             </label>
             <input
@@ -328,10 +309,7 @@ export default function StockForm() {
                 Category
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Initial Qty
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Available Qty
+                Initial Quantity
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
@@ -352,9 +330,6 @@ export default function StockForm() {
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
                   {stock.initialQuantity}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
-                  {stock.availableQuantity}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                   {formatDateForDisplay(stock.date)}

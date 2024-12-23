@@ -18,7 +18,7 @@ const parseDate = (dateString) => {
 export async function GET(request) {
   try {
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
 
     const stocks = await db.collection('stock')
       .aggregate([
@@ -65,9 +65,9 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { modelName, categoryId, initialQuantity, availableQuantity, date } = body;
+    const { modelName, categoryId, initialQuantity, date } = body;
 
-    if (!modelName || !categoryId || !initialQuantity || !availableQuantity || !date) {
+    if (!modelName || !categoryId || !initialQuantity || !date) {
       return NextResponse.json(
         { message: 'All fields are required' },
         { status: 400 }
@@ -75,13 +75,13 @@ export async function POST(request) {
     }
 
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
 
     const stockResult = await db.collection('stock').insertOne({
       modelName,
       categoryId: new ObjectId(categoryId),
       initialQuantity: parseInt(initialQuantity),
-      availableQuantity: parseInt(availableQuantity),
+      availableQuantity: parseInt(initialQuantity),
       date: parseDate(date),
       createdAt: new Date()
     });

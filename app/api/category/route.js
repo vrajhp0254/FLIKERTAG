@@ -19,7 +19,7 @@ export async function POST(req) {
       throw new Error('Database connection failed');
     }
 
-    const db = client.db('flikertag');
+    const db = client.db('specly');
     
     // Check for duplicate category
     const existingCategory = await db.collection('category').findOne({
@@ -79,7 +79,7 @@ export async function POST(req) {
 export async function GET() {
   try {
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
     
     const categories = await db.collection('category')
       .find({})

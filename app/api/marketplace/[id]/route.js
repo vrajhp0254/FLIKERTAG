@@ -17,7 +17,7 @@ export async function PUT(request, { params }) {
     }
 
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
 
     // Check for duplicate marketplace name
     const duplicate = await db.collection('marketplace').findOne({
@@ -64,7 +64,7 @@ export async function DELETE(request, { params }) {
   try {
     const id = params.id;
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
 
     // Delete the marketplace
     const result = await db.collection('marketplace').deleteOne({

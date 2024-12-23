@@ -83,8 +83,12 @@ export default function Inventory() {
         <div className="hidden md:block">
           <div className="flex items-center space-x-4">
             <div className="text-center">
-              <p className="text-sm text-gray-500">Total Items</p>
-              <p className="text-2xl font-bold text-blue-600">{stocks.length}</p>
+              <p className="text-sm text-gray-500">
+                {hasActiveFilters ? 'Filtered Items' : 'Total Items'}
+              </p>
+              <p className="text-2xl font-bold text-blue-600">
+                {filteredStocks.length}
+              </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-gray-500">Categories</p>

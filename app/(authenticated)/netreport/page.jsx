@@ -59,12 +59,12 @@ export default function NetReport() {
         <div className="hidden md:flex items-center space-x-6">
           <div className="text-center">
             <p className="text-sm text-gray-500">Total Products</p>
-            <p className="text-2xl font-bold text-green-600">{reports.length}</p>
+            <p className="text-2xl font-bold text-green-600">{filteredReports.length}</p>
           </div>
           <div className="text-center">
             <p className="text-sm text-gray-500">Total Available Stock</p>
             <p className="text-2xl font-bold text-blue-600">
-              {reports.reduce((sum, report) => sum + report.availableStock, 0)}
+              {filteredReports.reduce((sum, report) => sum + report.availableStock, 0)}
             </p>
           </div>
         </div>

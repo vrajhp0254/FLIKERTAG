@@ -8,7 +8,7 @@ export async function POST(req) {
     const { stockId, quantity, transactionType, returnType, marketplaceId, date } = body;
 
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
 
     // Get stock details
     const stock = await db.collection('stock').findOne(
@@ -123,7 +123,7 @@ export async function GET(request) {
     const transactionType = searchParams.get('transactionType');
 
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
 
     const transactions = await db.collection('transactions').aggregate([
       {

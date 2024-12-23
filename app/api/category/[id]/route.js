@@ -17,7 +17,7 @@ export async function PUT(request, { params }) {
     }
 
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
 
     // Check for duplicate category name (excluding current category)
     const duplicate = await db.collection('category').findOne({
@@ -64,7 +64,7 @@ export async function DELETE(request, { params }) {
   try {
     const id = await Promise.resolve(params.id);
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
 
     // Check if category is in use
     const stockCount = await db.collection('stock').countDocuments({

@@ -21,9 +21,9 @@ export async function PUT(request, { params }) {
   try {
     const id = params.id;
     const body = await request.json();
-    const { modelName, categoryId, initialQuantity, availableQuantity, date } = body;
+    const { modelName, categoryId, initialQuantity, date } = body;
 
-    if (!modelName || !categoryId || !initialQuantity || !availableQuantity || !date) {
+    if (!modelName || !categoryId || !initialQuantity || !date) {
       return NextResponse.json(
         { message: 'All fields are required' },
         { status: 400 }
@@ -31,7 +31,7 @@ export async function PUT(request, { params }) {
     }
 
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
 
     // Get current stock data and check for existing transactions
     const currentStock = await db.collection('stock').findOne(
@@ -52,6 +52,15 @@ export async function PUT(request, { params }) {
       );
     }
 
+    // Calculate the difference in initial quantity
+    const quantityDifference = parseInt(initialQuantity) - currentStock.initialQuantity;
+    const newAvailableQuantity = currentStock.availableQuantity + quantityDifference;
+
+    // Get category details
+    const category = await db.collection('category').findOne(
+      { _id: new ObjectId(categoryId) }
+    );
+
     // Update the stock
     const result = await db.collection('stock').updateOne(
       { _id: new ObjectId(id) },
@@ -60,7 +69,7 @@ export async function PUT(request, { params }) {
           modelName,
           categoryId: new ObjectId(categoryId),
           initialQuantity: parseInt(initialQuantity),
-          availableQuantity: parseInt(availableQuantity),
+          availableQuantity: newAvailableQuantity,
           date: parseDate(date),
           updatedAt: new Date()
         }
@@ -74,6 +83,24 @@ export async function PUT(request, { params }) {
       );
     }
 
+    // Update stock data in all related transactions
+    await db.collection('transactions').updateMany(
+      {
+        $or: [
+          { 'stockData.id': id },
+          { stockId: new ObjectId(id) }
+        ]
+      },
+      {
+        $set: {
+          'stockData.modelName': modelName,
+          'stockData.initialQuantity': parseInt(initialQuantity),
+          'categoryData.id': categoryId,
+          'categoryData.name': category.name
+        }
+      }
+    );
+
     // Update initial transaction if no other transactions exist
     if (!hasTransactions && currentStock.initialQuantity !== parseInt(initialQuantity)) {
       await db.collection('transactions').updateOne(
@@ -84,7 +111,7 @@ export async function PUT(request, { params }) {
         {
           $set: {
             quantity: parseInt(initialQuantity),
-            availableQuantity: parseInt(availableQuantity),
+            newAvailableQuantity: newAvailableQuantity,
             date: parseDate(date),
             updatedAt: new Date()
           }
@@ -110,7 +137,7 @@ export async function DELETE(request, { params }) {
   try {
     const id = params.id;
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
 
     // Get stock details before deletion
     const stock = await db.collection('stock').findOne(

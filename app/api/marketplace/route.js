@@ -18,7 +18,7 @@ export async function POST(req) {
       throw new Error('Database connection failed');
     }
 
-    const db = client.db('flikertag');
+    const db = client.db('specly');
     
     // Check for duplicate marketplace
     const existingMarketplace = await db.collection('marketplace').findOne({
@@ -78,7 +78,7 @@ export async function POST(req) {
 export async function GET() {
   try {
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
     
     const marketplaces = await db.collection('marketplace')
       .find({})

@@ -5,7 +5,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'Flikertag',
+  title: 'Specly',
   description: 'Inventory Management System',
   icons: {
     icon: '/favicon.ico',

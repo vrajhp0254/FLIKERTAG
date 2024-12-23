@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb';
 export async function GET() {
   try {
     const client = await clientPromise;
-    const db = client.db('flikertag');
+    const db = client.db('specly');
 
     const stocks = await db.collection('stock').aggregate([
       {
