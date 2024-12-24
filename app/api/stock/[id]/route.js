@@ -19,7 +19,7 @@ const parseDate = (dateString) => {
 // Update stock
 export async function PUT(request, { params }) {
   try {
-    const id = params.id;
+    const id = (await params).id;
     const body = await request.json();
     const { modelName, categoryId, initialQuantity, date } = body;
 
@@ -107,7 +107,7 @@ export async function PUT(request, { params }) {
 // Delete stock
 export async function DELETE(request, { params }) {
   try {
-    const id = params.id;
+    const id = (await params).id;
     const client = await clientPromise;
     const db = client.db('specly');
 

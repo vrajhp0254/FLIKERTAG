@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb';
 // Update marketplace
 export async function PUT(request, { params }) {
   try {
-    const id = await Promise.resolve(params.id);
+    const id = (await params).id;
     const body = await request.json();
     const { name } = body;
 
@@ -62,7 +62,7 @@ export async function PUT(request, { params }) {
 // Delete marketplace
 export async function DELETE(request, { params }) {
   try {
-    const id = params.id;
+    const id = (await params).id;
     const client = await clientPromise;
     const db = client.db('specly');
 
