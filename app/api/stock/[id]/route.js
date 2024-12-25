@@ -125,7 +125,12 @@ export async function DELETE(request, { params }) {
 
     // Update all transactions to store stock data
     await db.collection('transactions').updateMany(
-      { 'stockData.id': id },
+      { 
+        $or: [
+          { stockId: new ObjectId(id) },
+          { 'stockData.id': id.toString() }
+        ]
+      },
       {
         $set: {
           'stockData.isDeleted': true,

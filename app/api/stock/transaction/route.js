@@ -62,7 +62,9 @@ export async function POST(req) {
 
     // Create transaction with actual data instead of IDs
     const transaction = {
+      stockId: stock._id,
       stockData: {
+        id: stock._id.toString(),
         modelName: stock.modelName,
         initialQuantity: stock.initialQuantity,
         availableQuantity: stock.availableQuantity

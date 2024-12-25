@@ -77,6 +77,19 @@ export async function POST(request) {
     const client = await clientPromise;
     const db = client.db('specly');
 
+    // Check if stock with same model name and category exists
+    const existingStock = await db.collection('stock').findOne({
+      modelName: modelName,
+      categoryId: new ObjectId(categoryId)
+    });
+
+    if (existingStock) {
+      return NextResponse.json(
+        { message: 'A stock with this model name and category already exists' },
+        { status: 400 }
+      );
+    }
+
     const stockResult = await db.collection('stock').insertOne({
       modelName,
       categoryId: new ObjectId(categoryId),
@@ -92,7 +105,17 @@ export async function POST(request) {
 
     await db.collection('transactions').insertOne({
       stockId: stockResult.insertedId,
+      stockData: {
+        id: stockResult.insertedId.toString(),
+        modelName: modelName,
+        initialQuantity: parseInt(initialQuantity),
+        availableQuantity: parseInt(initialQuantity)
+      },
       categoryId: new ObjectId(categoryId),
+      categoryData: {
+        id: category._id.toString(),
+        name: category.name
+      },
       modelName: modelName,
       categoryName: category.name,
       quantity: parseInt(initialQuantity),

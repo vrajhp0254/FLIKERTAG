@@ -11,14 +11,32 @@ export async function GET() {
       {
         $lookup: {
           from: 'transactions',
-          let: { modelName: '$modelName' },
+          let: { 
+            modelName: '$modelName',
+            stockId: '$_id'
+          },
           pipeline: [
             {
               $match: {
                 $expr: {
-                  $or: [
-                    { $eq: ['$stockData.modelName', '$$modelName'] },
-                    { $eq: ['$modelName', '$$modelName'] }
+                  $and: [
+                    {
+                      $or: [
+                        // Match current stock's transactions
+                        {
+                          $and: [
+                            { $eq: ['$stockId', '$$stockId'] }
+                          ]
+                        },
+                        // Match transactions with stockData reference
+                        {
+                          $and: [
+                            { $eq: ['$stockData.id', { $toString: '$$stockId' }] },
+                            { $ne: [{ $ifNull: ['$stockData.isDeleted', false] }, true] }
+                          ]
+                        }
+                      ]
+                    }
                   ]
                 }
               }
