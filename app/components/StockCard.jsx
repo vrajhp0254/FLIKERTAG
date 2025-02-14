@@ -227,7 +227,8 @@ export default function StockCard({ stock, onUpdate }) {
               className="w-full p-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Select Return Type</option>
-              <option value="customer">Customer</option>
+              <option value="customer">Customer Ok</option>
+              <option value="Customer Wrong">Customer Wrong</option>
               <option value="courier">Courier</option>
             </select>
           </div>

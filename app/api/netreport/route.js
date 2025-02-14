@@ -78,7 +78,11 @@ export async function GET() {
         .filter(t => t.transactionType === 'return' && t.returnType === 'customer')
         .reduce((sum, t) => sum + (parseInt(t.quantity) || 0), 0);
 
-      const totalReturn = courierReturn + customerReturn;
+      const customerWrongReturn = transactions
+        .filter(t => t.transactionType === 'return' && t.returnType === 'Customer Wrong')
+        .reduce((sum, t) => sum + (parseInt(t.quantity) || 0), 0);
+
+      const totalReturn = courierReturn + customerReturn + customerWrongReturn;
 
       return {
         modelName: stock.modelName,
@@ -89,6 +93,7 @@ export async function GET() {
         totalSell,
         courierReturn,
         customerReturn,
+        customerWrongReturn,
         netSell: totalSell - totalReturn
       };
     });
