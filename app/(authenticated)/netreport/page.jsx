@@ -6,7 +6,10 @@ export default function NetReport() {
   const [reports, setReports] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [filters, setFilters] = useState({
+    search: '',
+    categoryId: ''
+  });
 
   useEffect(() => {
     fetchReports();
@@ -39,9 +42,25 @@ export default function NetReport() {
     }
   };
 
-  const filteredReports = selectedCategory
-    ? reports.filter(report => report.categoryId === selectedCategory)
-    : reports;
+  const getFilteredReports = () => {
+    return reports.filter(report => {
+      const matchesSearch = !filters.search || 
+        report.modelName.toLowerCase().includes(filters.search.toLowerCase());
+      const matchesCategory = !filters.categoryId || 
+        report.categoryId === filters.categoryId;
+      return matchesSearch && matchesCategory;
+    });
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const filteredReports = getFilteredReports();
 
   if (loading) {
     return <LoadingSpinner />;
@@ -71,11 +90,20 @@ export default function NetReport() {
       </div>
 
       <div className="flex justify-between items-center mb-6">
-        {/* Category Filter */}
         <div className="flex items-center space-x-4">
+          <input
+            type="text"
+            name="search"
+            value={filters.search}
+            onChange={handleFilterChange}
+            placeholder="Search by model name..."
+            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
+          />
+          
           <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            value={filters.categoryId}
+            onChange={handleFilterChange}
+            name="categoryId"
             className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">All Categories</option>
@@ -86,15 +114,15 @@ export default function NetReport() {
             ))}
           </select>
           
-          {selectedCategory && (
+          {(filters.search || filters.categoryId) && (
             <button
-              onClick={() => setSelectedCategory('')}
+              onClick={() => setFilters({ search: '', categoryId: '' })}
               className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-              Clear Filter
+              Clear Filters
             </button>
           )}
         </div>

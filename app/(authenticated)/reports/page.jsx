@@ -15,7 +15,9 @@ export default function Reports() {
     marketplaceId: '',
     startDate: '',
     endDate: '',
-    transactionType: ''
+    transactionType: '',
+    search: '',
+    sortBy: ''
   });
 
   useEffect(() => {
@@ -84,8 +86,58 @@ export default function Reports() {
       marketplaceId: '',
       startDate: '',
       endDate: '',
-      transactionType: ''
+      transactionType: '',
+      search: '',
+      sortBy: ''
     });
+  };
+
+  const getFilteredAndSortedReports = () => {
+    let filtered = [...reports];
+
+    if (filters.search) {
+      filtered = filtered.filter(report => 
+        report.stockData?.modelName?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        report.modelName?.toLowerCase().includes(filters.search.toLowerCase())
+      );
+    }
+
+    if (filters.sortBy) {
+      filtered.sort((a, b) => {
+        const aStock = a.newAvailableQuantity || 0;
+        const bStock = b.newAvailableQuantity || 0;
+        return filters.sortBy === 'high' ? bStock - aStock : aStock - bStock;
+      });
+    }
+
+    return filtered;
+  };
+
+  const filteredReports = getFilteredAndSortedReports();
+
+  const getTotalAvailableQuantity = () => {
+    const latestStockQuantities = new Map();
+
+    filteredReports.forEach(transaction => {
+      const stockId = transaction.stockId;
+      
+      if (!latestStockQuantities.has(stockId) || 
+          new Date(transaction.date) > new Date(latestStockQuantities.get(stockId).date)) {
+        latestStockQuantities.set(stockId, {
+          date: transaction.date,
+          quantity: transaction.newAvailableQuantity || 0
+        });
+      }
+    });
+
+    return Array.from(latestStockQuantities.values())
+      .reduce((total, stock) => total + stock.quantity, 0);
+  };
+
+  const getTotalQuantityEntries = () => {
+    return filteredReports.reduce((total, transaction) => 
+      total + (transaction.quantity || 0), 0
+    );
   };
 
   if (loading) {
@@ -102,7 +154,6 @@ export default function Reports() {
           <p className="text-gray-500 mt-1">Track and analyze your inventory transactions</p>
         </div>
         <div className="hidden md:flex items-center space-x-6">
-          
           <div className="text-center">
             <p className="text-sm text-gray-500">Today's Transactions</p>
             <p className="text-2xl font-bold text-blue-600">
@@ -112,22 +163,54 @@ export default function Reports() {
             </p>
           </div>
           <div className="text-center">
+            <p className="text-sm text-gray-500">Total Quantity Entries</p>
+            <p className="text-2xl font-bold text-green-600">
+              {getTotalQuantityEntries()}
+            </p>
+          </div>
+          <div className="text-center">
             <p className="text-sm text-gray-500">Total Transactions</p>
-            <p className="text-2xl font-bold text-purple-600">{reports.length}</p>
+            <p className="text-2xl font-bold text-purple-600">{filteredReports.length}</p>
           </div>
         </div>
       </div>
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Search Stock</label>
+            <input
+              type="text"
+              name="search"
+              value={filters.search}
+              onChange={handleFilterChange}
+              placeholder="Search by model name..."
+              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Sort by Stock</label>
+            <select
+              name="sortBy"
+              value={filters.sortBy}
+              onChange={handleFilterChange}
+              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">No Sorting</option>
+              <option value="high">Highest to Lowest</option>
+              <option value="low">Lowest to Highest</option>
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-2">Category</label>
             <select
               name="categoryId"
               value={filters.categoryId}
               onChange={handleFilterChange}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">All Categories</option>
               {categories.map(category => (
@@ -197,8 +280,11 @@ export default function Reports() {
           <div className="mt-4 flex justify-end">
             <button
               onClick={clearFilters}
-              className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md"
+              className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md flex items-center"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
               Clear Filters
             </button>
           </div>
@@ -223,7 +309,7 @@ export default function Reports() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {reports.map((transaction, index) => (
+              {filteredReports.map((transaction, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {new Date(transaction.date).toLocaleDateString('en-GB', {
