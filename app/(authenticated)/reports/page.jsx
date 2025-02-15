@@ -17,7 +17,6 @@ export default function Reports() {
     endDate: "",
     transactionType: "",
     search: "",
-    sortBy: "",
   });
 
   useEffect(() => {
@@ -91,11 +90,10 @@ export default function Reports() {
       endDate: "",
       transactionType: "",
       search: "",
-      sortBy: "",
     });
   };
 
-  const getFilteredAndSortedReports = () => {
+  const getFilteredReports = () => {
     let filtered = [...reports];
 
     if (filters.search) {
@@ -108,18 +106,10 @@ export default function Reports() {
       );
     }
 
-    if (filters.sortBy) {
-      filtered.sort((a, b) => {
-        const aStock = a.newAvailableQuantity || 0;
-        const bStock = b.newAvailableQuantity || 0;
-        return filters.sortBy === "high" ? bStock - aStock : aStock - bStock;
-      });
-    }
-
     return filtered;
   };
 
-  const filteredReports = getFilteredAndSortedReports();
+  const filteredReports = getFilteredReports();
 
   const getTotalAvailableQuantity = () => {
     const latestStockQuantities = new Map();
@@ -158,7 +148,7 @@ export default function Reports() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-8 bg-white p-6 rounded-lg shadow-md">
+      <div className="flex items-center justify-between mb-4 bg-white p-6 rounded-lg shadow-md">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             Transaction Reports
@@ -180,24 +170,25 @@ export default function Reports() {
               }
             </p>
           </div>
-          <div className="text-center">
-            <p className="text-sm text-gray-500">Total Quantity Entries</p>
-            <p className="text-2xl font-bold text-green-600">
-              {getTotalQuantityEntries()}
-            </p>
-          </div>
+
           <div className="text-center">
             <p className="text-sm text-gray-500">Total Transactions</p>
             <p className="text-2xl font-bold text-purple-600">
               {filteredReports.length}
             </p>
           </div>
+          <div className="text-center">
+            <p className="text-sm text-gray-500">Total Quantity Entries</p>
+            <p className="text-2xl font-bold text-green-600">
+              {getTotalQuantityEntries()}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="bg-white p-4 rounded-lg shadow mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">
               Search Stock
@@ -210,22 +201,6 @@ export default function Reports() {
               placeholder="Search by model name..."
               className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Sort by Stock
-            </label>
-            <select
-              name="sortBy"
-              value={filters.sortBy}
-              onChange={handleFilterChange}
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">No Sorting</option>
-              <option value="high">Highest to Lowest</option>
-              <option value="low">Lowest to Highest</option>
-            </select>
           </div>
 
           <div>
@@ -390,15 +365,20 @@ export default function Reports() {
                         transaction.marketplaceName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                    
-                      <div>
+                    <div>
                       <div className="text-xs text-gray-500">
-                        Previous: {transaction.stockData?.initialQuantity + transaction.quantity ||
-                      transaction.initialQuantity }
+                        Previous:
+                        {transaction.transactionType === "initial"
+                          ? transaction.stockData?.initialQuantity -
+                            (transaction.newAvailableQuantity -
+                              transaction.previousAvailableQuantity)
+                          : transaction.stockData?.initialQuantity ||
+                            transaction.initialQuantity}
                       </div>
                       <div className="font-medium">
-                        New: {transaction.stockData?.initialQuantity ||
-                      transaction.initialQuantity}
+                        New:{" "}
+                        {transaction.stockData?.initialQuantity ||
+                          transaction.initialQuantity}
                       </div>
                     </div>
                   </td>
@@ -432,7 +412,7 @@ export default function Reports() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {transaction.returnType === "customer"
-                      ? "Customer Ok" 
+                      ? "Customer Ok"
                       : transaction.returnType === "courier"
                       ? "Courier"
                       : transaction.returnType || "-"}
