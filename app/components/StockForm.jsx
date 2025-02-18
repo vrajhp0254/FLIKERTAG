@@ -61,6 +61,7 @@ export default function StockForm() {
     type: 'add', // 'add' or 'subtract'
     amount: ''
   });
+  const [currentQuantity, setCurrentQuantity] = useState('');
 
   useEffect(() => {
     fetchCategories();
@@ -68,7 +69,7 @@ export default function StockForm() {
   }, []);
 
   useEffect(() => {
-    console.log('Fetched stocks:', stocks); // Add this for debugging
+    console.log('Fetched stocks:', stocks); 
   }, [stocks]);
 
   const fetchCategories = async () => {
@@ -130,7 +131,7 @@ export default function StockForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          date: formData.date // Send as DD-MM-YYYY
+          date: formData.date
         }),
       });
 
@@ -146,6 +147,11 @@ export default function StockForm() {
           date: new Date().toISOString().split('T')[0]
         });
         setEditingId(null);
+        setQuantityAdjustment({
+          type: 'add',
+          amount: ''
+        });
+        setCurrentQuantity('');
         await fetchStocks();
       } else {
         const error = await response.json();
@@ -166,6 +172,11 @@ export default function StockForm() {
       date: formatDateForInput(stock.date)
     });
     setEditingId(stock._id);
+    setCurrentQuantity(stock.initialQuantity.toString() || "0");
+    setQuantityAdjustment({
+      type: 'add',
+      amount: ''
+    });
   };
 
   const handleDelete = async (id) => {
@@ -201,6 +212,11 @@ export default function StockForm() {
       date: new Date().toISOString().split('T')[0]
     });
     setEditingId(null);
+    setQuantityAdjustment({
+      type: 'add',
+      amount: ''
+    });
+    setCurrentQuantity('');
   };
 
   const filteredStocks = stocks.filter(stock => {
@@ -219,20 +235,74 @@ export default function StockForm() {
     }));
   };
 
-  const handleQuantityAdjustment = () => {
-    const amount = parseInt(quantityAdjustment.amount) || 0;
-    const currentQuantity = parseInt(formData.initialQuantity) || 0;
+  const handleQuantityAdjustmentChange = (e) => {
+    const { value, type } = e.target;
     
-    const newQuantity = quantityAdjustment.type === 'add' 
-      ? currentQuantity + amount 
-      : currentQuantity - amount;
+    if (type === 'select-one') {
+      setQuantityAdjustment(prev => ({
+        ...prev,
+        type: value
+      }));
 
-    setFormData(prev => ({
-      ...prev,
-      initialQuantity: Math.max(0, newQuantity).toString()
-    }));
-    
-    setQuantityAdjustment({ type: 'add', amount: '' });
+      // Recalculate with new type if there's an amount
+      if (quantityAdjustment.amount) {
+        const original = editingId 
+          ? (currentQuantity !== '' ? parseInt(currentQuantity) : 0)
+          : 0;
+        const adjustment = parseInt(quantityAdjustment.amount) || 0;
+        const newQuantity = value === 'add' 
+          ? original + adjustment 
+          : Math.max(0, original - adjustment);
+        
+        setFormData(prev => ({
+          ...prev,
+          initialQuantity: newQuantity.toString()
+        }));
+      }
+    } else {
+      // Handle amount change
+      setQuantityAdjustment(prev => ({
+        ...prev,
+        amount: value
+      }));
+      
+      // Store current quantity only once when starting to edit
+      if (editingId && currentQuantity === '') {
+        setCurrentQuantity(formData.initialQuantity || "0");
+      }
+      
+      // Calculate immediately, even for first digit
+      const original = editingId 
+        ? (currentQuantity !== '' ? parseInt(currentQuantity) : parseInt(formData.initialQuantity) || 0)
+        : 0;
+      
+      if (value === '') {
+        if (editingId) {
+          setFormData(prev => ({
+            ...prev,
+            initialQuantity: currentQuantity || "0"
+          }));
+          setCurrentQuantity('');
+        } else {
+          setFormData(prev => ({
+            ...prev,
+            initialQuantity: ''
+          }));
+        }
+      } else {
+        const adjustment = parseInt(value) || 0;
+        
+        // Calculate new quantity based on adjustment type
+        const newQuantity = quantityAdjustment.type === 'add' 
+          ? original + adjustment 
+          : Math.max(0, original - adjustment);
+        
+        setFormData(prev => ({
+          ...prev,
+          initialQuantity: newQuantity.toString()
+        }));
+      }
+    }
   };
 
   if (loading && stocks.length === 0) {
@@ -302,7 +372,7 @@ export default function StockForm() {
                   disabled={loading}
                 />
               </div>
-              <div className="mt-2  bg-white rounded-lg">
+              <div className="mt-2 bg-white rounded-lg">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   Adjust Quantity
                 </label>
@@ -310,10 +380,7 @@ export default function StockForm() {
                   <div className="flex gap-3">
                     <select
                       value={quantityAdjustment.type}
-                      onChange={(e) => setQuantityAdjustment(prev => ({
-                        ...prev,
-                        type: e.target.value
-                      }))}
+                      onChange={handleQuantityAdjustmentChange}
                       className="w-28 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700"
                     >
                       <option value="add">Add (+)</option>
@@ -323,43 +390,27 @@ export default function StockForm() {
                       type="number"
                       min="0"
                       value={quantityAdjustment.amount}
-                      onChange={(e) => setQuantityAdjustment(prev => ({
-                        ...prev,
-                        amount: e.target.value
-                      }))}
-                      placeholder="Enter amount"
+                      onChange={handleQuantityAdjustmentChange}
+                      placeholder="Enter quantity"
                       className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700"
                     />
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleQuantityAdjustment}
-                    className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                  >
-                    Apply
-                  </button>
-                </div>
-                
-                {/* Preview Section */}
-                <div className=" pt-4 bg-gray-50 rounded-lg">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-1">Current Quantity</p>
-                      <p className="text-xl font-medium text-gray-900">
-                        {formData.initialQuantity || 0}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-1">New Quantity</p>
-                      <p className="text-xl font-medium text-blue-500">
-                        {(() => {
-                          const current = parseInt(formData.initialQuantity) || 0;
-                          const adjustment = parseInt(quantityAdjustment.amount) || 0;
-                          return quantityAdjustment.type === 'add' 
-                            ? current + adjustment 
-                            : Math.max(0, current - adjustment);
-                        })()}
-                      </p>
+                  
+                  {/* Preview Section */}
+                  <div className="pt-4 bg-gray-50 rounded-lg">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 mb-1">Old Quantity</p>
+                        <p className="text-xl font-medium text-gray-900">
+                          {currentQuantity || formData.initialQuantity || 0}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 mb-1">New Quantity</p>
+                        <p className="text-xl font-medium text-blue-500">
+                          {formData.initialQuantity || 0}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

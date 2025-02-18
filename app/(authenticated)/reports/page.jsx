@@ -419,7 +419,7 @@ export default function Reports() {
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                    {transaction.quantity}
+                    {(transaction.previousAvailableQuantity)>(transaction.newAvailableQuantity) && transaction.transactionType === "initial"?`-${transaction.quantity}`:transaction.quantity}
                   </td>
                 </tr>
               ))}
